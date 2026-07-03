@@ -1,0 +1,17 @@
+/* Make Firefox look like a Chrome PWA by hiding all browser chrome */
+
+#TabsToolbar {
+  visibility: collapse !important;
+}
+
+#nav-bar {
+  visibility: collapse !important;
+}
+
+#PersonalToolbar {
+  visibility: collapse !important;
+}
+
+#navigator-toolbox {
+  border-bottom: none !important;
+}
