@@ -1,4 +1,5 @@
 {
+  "output": "DP-1",
   "reload_style_on_change": true,
   "layer": "top",
   "position": "top",
@@ -27,9 +28,8 @@
       "6": "6",
       "7": "7",
       "8": "8",
-      "9": "9",
-      "10": "0",
-      "active": "󱓻"
+      "9": "U",
+      "10": "L"
     },
     "persistent-workspaces": {
       "1": [],
@@ -37,7 +37,9 @@
       "3": [],
       "4": [],
       "5": [],
-      "6": []
+      "6": [],
+      "9": [],
+      "10": []
     }
   },
   "custom/omarchy": {
