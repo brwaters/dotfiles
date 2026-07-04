@@ -2,6 +2,25 @@
 
 # omarchy:summary=Run a static ASCII screensaver (no animation) to avoid fan noise on macbook.
 
+branding="$HOME/.config/omarchy/branding/screensaver.txt"
+file_lines=$(wc -l < "$branding")
+file_cols=$(awk '{ print length }' "$branding" | sort -n | tail -1)
+
+draw() {
+  local term_lines term_cols top_pad left_pad
+  term_lines=$(tput lines)
+  term_cols=$(tput cols)
+  top_pad=$(( (term_lines - file_lines) / 2 ))
+  left_pad=$(( (term_cols - file_cols) / 2 ))
+  left_pad=$(( left_pad < 0 ? 0 : left_pad ))
+
+  clear
+  for _ in $(seq 1 $top_pad); do echo; done
+  while IFS= read -r line; do
+    printf "%${left_pad}s%s\n" "" "$line"
+  done < "$branding"
+}
+
 exit_screensaver() {
   hyprctl keyword cursor:invisible false &>/dev/null || true
   tput cnorm 2>/dev/null
@@ -10,30 +29,13 @@ exit_screensaver() {
 }
 
 trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
+trap draw SIGWINCH
 
 printf '\033]11;rgb:00/00/00\007'
 hyprctl keyword cursor:invisible true &>/dev/null
-
-clear
 tput civis 2>/dev/null
+clear
 
-branding="$HOME/.config/omarchy/branding/screensaver.txt"
-
-term_lines=$(tput lines)
-term_cols=$(tput cols)
-file_lines=$(wc -l < "$branding")
-file_cols=$(awk '{ print length }' "$branding" | sort -n | tail -1)
-
-top_pad=$(( (term_lines - file_lines) / 2 ))
-left_pad=$(( (term_cols - file_cols) / 2 ))
-left_pad=$(( left_pad < 0 ? 0 : left_pad ))
-
-for _ in $(seq 1 $top_pad); do echo; done
-while IFS= read -r line; do
-  printf "%${left_pad}s%s\n" "" "$line"
-done < "$branding"
-
-tty=$(tty 2>/dev/null)
 while true; do
   if read -n1 -t 1; then
     exit_screensaver
