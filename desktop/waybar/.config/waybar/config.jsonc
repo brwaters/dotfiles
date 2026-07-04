@@ -73,10 +73,12 @@
     "on-click-right": "omarchy-launch-floating-terminal-with-presentation omarchy-tz-select"
   },
   "custom/clock": {
-    "exec": "date '+%A %I:%M %p'",
+    "exec": "[ \"$(cat /tmp/waybar-clock-mode 2>/dev/null)\" = 'date' ] && date '+%d %B W%V %Y' || date '+%A %I:%M %p'",
     "interval": 1,
     "format": "{}",
+    "signal": 11,
     "tooltip": false,
+    "on-click": "[ \"$(cat /tmp/waybar-clock-mode 2>/dev/null)\" = 'date' ] && echo time > /tmp/waybar-clock-mode || echo date > /tmp/waybar-clock-mode; pkill -RTMIN+11 waybar",
     "on-click-right": "omarchy-launch-floating-terminal-with-presentation omarchy-tz-select"
   },
   "custom/weather": {
