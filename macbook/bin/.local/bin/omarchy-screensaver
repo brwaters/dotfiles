@@ -2,6 +2,8 @@
 
 # omarchy:summary=Run a static ASCII screensaver (no animation) to avoid fan noise on macbook.
 
+CURSOR_WATCHER_PID=""
+
 branding="$HOME/.config/omarchy/branding/screensaver.txt"
 file_lines=$(wc -l < "$branding")
 file_cols=$(awk '{ print length }' "$branding" | sort -n | tail -1)
@@ -24,6 +26,7 @@ draw() {
 exit_screensaver() {
   hyprctl keyword cursor:invisible false &>/dev/null || true
   tput cnorm 2>/dev/null
+  [[ -n $CURSOR_WATCHER_PID ]] && kill $CURSOR_WATCHER_PID 2>/dev/null
   pkill -f org.omarchy.screensaver 2>/dev/null
   exit 0
 }
@@ -35,6 +38,19 @@ printf '\033]11;rgb:00/00/00\007'
 hyprctl keyword cursor:invisible true &>/dev/null
 tput civis 2>/dev/null
 clear
+
+initial_pos=$(hyprctl cursorpos)
+(
+  while true; do
+    sleep 0.5
+    current_pos=$(hyprctl cursorpos 2>/dev/null)
+    if [[ "$current_pos" != "$initial_pos" ]]; then
+      kill -TERM $PPID
+      exit
+    fi
+  done
+) &
+CURSOR_WATCHER_PID=$!
 
 while true; do
   if read -n1 -t 1; then
