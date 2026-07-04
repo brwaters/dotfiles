@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# omarchy:summary=Show a black screen for secondary displays during screensaver.
+
+exit_screensaver() {
+  hyprctl keyword cursor:invisible false &>/dev/null || true
+  pkill -f org.omarchy.screensaver 2>/dev/null
+  exit 0
+}
+
+trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
+
+printf '\033]11;rgb:00/00/00\007'
+clear
+
+tty=$(tty 2>/dev/null)
+
+while true; do
+  if read -n1 -t 1; then
+    exit_screensaver
+  fi
+done

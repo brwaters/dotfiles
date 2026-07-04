@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# omarchy:summary=Launch the Omarchy screensaver on DP-1, black screen on secondary displays.
+
+if ! command -v tte &>/dev/null; then
+  exit 1
+fi
+
+pgrep -f org.omarchy.screensaver && exit 0
+
+if omarchy-toggle-enabled screensaver-off && [[ $1 != "force" ]]; then
+  exit 1
+fi
+
+walker -q
+
+terminal=$(xdg-terminal-exec --print-id)
+
+launch_terminal() {
+  local cmd="$1"
+  case $terminal in
+  *Alacritty*)
+    hyprctl dispatch exec -- \
+      alacritty --class=org.omarchy.screensaver \
+      --config-file ~/.local/share/omarchy/default/alacritty/screensaver.toml \
+      -e $cmd
+    ;;
+  *ghostty*)
+    hyprctl dispatch exec -- \
+      ghostty --class=org.omarchy.screensaver \
+      --config-file=~/.local/share/omarchy/default/ghostty/screensaver \
+      --font-size=18 \
+      -e $cmd
+    ;;
+  *foot*)
+    hyprctl dispatch exec -- \
+      foot --app-id=org.omarchy.screensaver \
+      --config="$OMARCHY_PATH/default/foot/screensaver.ini" \
+      -e $cmd
+    ;;
+  *kitty*)
+    hyprctl dispatch exec -- \
+      kitty --class=org.omarchy.screensaver \
+      --override font_size=18 \
+      --override window_padding_width=0 \
+      -e $cmd
+    ;;
+  *)
+    notify-send -u low "✋  Screensaver only runs in Alacritty, Foot, Ghostty, or Kitty"
+    ;;
+  esac
+}
+
+for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
+  hyprctl dispatch focusmonitor $m
+  if [[ "$m" == "DP-1" ]]; then
+    launch_terminal omarchy-screensaver
+  else
+    launch_terminal omarchy-screensaver-black
+  fi
+done
