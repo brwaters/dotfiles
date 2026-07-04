@@ -2,12 +2,15 @@
 
 # omarchy:summary=Run the Omarchy screensaver using the waves effect from TTE.
 
+CURSOR_WATCHER_PID=""
+
 screensaver_in_focus() {
   hyprctl activewindow -j | jq -e '.class == "org.omarchy.screensaver"' >/dev/null 2>&1
 }
 
 exit_screensaver() {
   hyprctl keyword cursor:invisible false &>/dev/null || true
+  [[ -n $CURSOR_WATCHER_PID ]] && kill $CURSOR_WATCHER_PID 2>/dev/null
   pkill -x tte 2>/dev/null
   pkill -f org.omarchy.screensaver 2>/dev/null
   exit 0
@@ -18,6 +21,20 @@ trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
 printf '\033]11;rgb:00/00/00\007'
 
 hyprctl keyword cursor:invisible true &>/dev/null
+
+# Exit on mouse movement by polling cursor position
+initial_pos=$(hyprctl cursorpos)
+(
+  while true; do
+    sleep 0.5
+    current_pos=$(hyprctl cursorpos 2>/dev/null)
+    if [[ "$current_pos" != "$initial_pos" ]]; then
+      kill -TERM $PPID
+      exit
+    fi
+  done
+) &
+CURSOR_WATCHER_PID=$!
 
 tty=$(tty 2>/dev/null)
 
