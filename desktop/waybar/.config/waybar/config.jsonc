@@ -10,6 +10,7 @@
   "modules-right": [
     "group/tray-expander",
     "bluetooth",
+    "custom/tailscale",
     "network",
     "pulseaudio",
     "cpu",
@@ -87,6 +88,12 @@
     "interval": 60,
     "tooltip": false,
     "on-click": "notify-send -u low \"$(omarchy-weather-status)\""
+  },
+  "custom/tailscale": {
+    "exec": "~/.config/waybar/tailscale.sh",
+    "return-type": "json",
+    "interval": 10,
+    "on-click": "~/.config/waybar/tailscale-toggle.sh"
   },
   "network": {
     "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
