@@ -4,9 +4,9 @@
 
 Three top-level stow roots:
 
-- `base/` — shared config that applies to every machine (desktop + macbook)
+- `base/` — shared config that applies to every machine (desktop + laptop)
 - `desktop/` — overrides/additions specific to the desktop
-- `macbook/` — overrides/additions specific to the macbook
+- `laptop/` — overrides/additions specific to the laptop
 
 Each root contains stow packages (e.g. `base/waybar`, `desktop/waybar`). Inside each package the directory tree mirrors `$HOME`, so `base/waybar/.config/waybar/config.jsonc` stows to `~/.config/waybar/config.jsonc`.
 
@@ -14,7 +14,7 @@ Each root contains stow packages (e.g. `base/waybar`, `desktop/waybar`). Inside 
 
 **Always prefer `base/` for changes that should exist on both machines.**
 
-Only put a change in `desktop/` or `macbook/` (or duplicate it into both) when the application doesn't support layered/merged config from multiple sources. For example, waybar loads a single `config.jsonc`, so there's no way to have a `base/` file that both machines extend — it must live in each machine's package.
+Only put a change in `desktop/` or `laptop/` (or duplicate it into both) when the application doesn't support layered/merged config from multiple sources. For example, waybar loads a single `config.jsonc`, so there's no way to have a `base/` file that both machines extend — it must live in each machine's package.
 
 If an app *does* support includes or imports (e.g. hyprland `source =`), keep shared config in `base/` and only put machine-specific overrides in the machine directory.
 
@@ -28,7 +28,7 @@ When a config file exists on disk but isn't tracked in the repo yet:
    ```
 2. **Re-stow** the package so the file is symlinked back to its original location:
    ```
-   cd ~/.dotfiles/base   # or desktop/ or macbook/
+   cd ~/.dotfiles/base   # or desktop/ or laptop/
    stow -R foo
    ```
    Use `-R` (restow) to remove any existing symlinks and recreate them cleanly.
@@ -40,7 +40,7 @@ Never copy a file into the stow package and leave the original in place — stow
 
 ## Stow invocation reference
 
-All stow commands should be run from inside the root that contains the package (`base/`, `desktop/`, or `macbook/`), **not** from `~/.dotfiles` itself.
+All stow commands should be run from inside the root that contains the package (`base/`, `desktop/`, or `laptop/`), **not** from `~/.dotfiles` itself.
 
 ```bash
 cd ~/.dotfiles/base
