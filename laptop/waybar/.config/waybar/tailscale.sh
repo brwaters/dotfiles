@@ -1,4 +1,6 @@
 #!/bin/bash
+command -v tailscale >/dev/null || { echo '{"text": ""}'; exit 0; }
+
 tailscale status --json 2>/dev/null | python3 -c "
 import json, sys
 
