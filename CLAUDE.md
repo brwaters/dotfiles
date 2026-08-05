@@ -29,10 +29,10 @@ When a config file exists on disk but isn't tracked in the repo yet:
 2. **Re-stow** the package so the file is symlinked back to its original location:
    ```
    cd ~/.dotfiles/base   # or desktop/ or laptop/
-   stow -R foo
+   stow -t ~ -R foo
    ```
    Use `-R` (restow) to remove any existing symlinks and recreate them cleanly.
-   Use `-n` to dry-run first if unsure: `stow -nv -R foo`
+   Use `-n` to dry-run first if unsure: `stow -t ~ -nv -R foo`
 
 3. **Commit** the new file.
 
@@ -44,13 +44,13 @@ All stow commands should be run from inside the root that contains the package (
 
 ```bash
 cd ~/.dotfiles/base
-stow waybar          # initial stow
-stow -R waybar       # restow (refresh symlinks after adding files)
-stow -D waybar       # unstow (remove symlinks)
-stow -nv -R waybar   # dry-run with verbose output
+stow -t ~ waybar          # initial stow
+stow -t ~ -R waybar       # restow (refresh symlinks after adding files)
+stow -t ~ -D waybar       # unstow (remove symlinks)
+stow -t ~ -nv -R waybar   # dry-run with verbose output
 ```
 
-The default target is the parent of the stow directory, which resolves to `$HOME` — correct for this setup.
+**Always pass `-t ~` (or `--target=~`) explicitly.** Stow's default target is the parent of the stow directory — when you `cd ~/.dotfiles/base` first, that parent is `~/.dotfiles`, not `$HOME`. Omitting `-t ~` silently creates stray symlinks inside the repo itself (e.g. `~/.dotfiles/.config/...`) instead of stowing into your home directory.
 
 ## Checking symlink status
 
