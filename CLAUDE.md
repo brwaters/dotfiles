@@ -52,6 +52,14 @@ stow -t ~ -nv -R waybar   # dry-run with verbose output
 
 **Always pass `-t ~` (or `--target=~`) explicitly.** Stow's default target is the parent of the stow directory — when you `cd ~/.dotfiles/base` first, that parent is `~/.dotfiles`, not `$HOME`. Omitting `-t ~` silently creates stray symlinks inside the repo itself (e.g. `~/.dotfiles/.config/...`) instead of stowing into your home directory.
 
+## Nerd Font glyphs in config files
+
+Waybar (and other) configs embed Nerd Font icon glyphs — Private Use Area Unicode codepoints that look like normal icons but are easy to corrupt. When reading a file back and re-typing/re-composing a line that contains one instead of preserving it byte-for-byte, the glyph can silently drop or get replaced with blank/mangled output (this has happened before with waybar icons going blank after an edit).
+
+Rules:
+- Never retype or hand-compose a glyph. When editing a line that contains one, keep `old_string`/`new_string` scoped so the glyph itself is copied verbatim from the Read output, not reproduced from memory.
+- If a glyph must actually change, verify after editing — e.g. `grep -c` for the expected codepoint, or reload waybar and visually confirm the icon still renders — rather than assuming the edit was byte-exact.
+
 ## Checking symlink status
 
 ```bash
