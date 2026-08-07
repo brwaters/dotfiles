@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}/omarchy-pomodoro"
+state_file="$state_dir/state"
+
+[[ -f $state_file ]] || exit 0
+
+read -r phase _ _ <"$state_file"
+systemctl --user stop "omarchy-pomodoro-${phase}.timer" "omarchy-pomodoro-${phase}.service" 2>/dev/null || true
+rm -f "$state_file"
+omarchy-notification-send "🍅" "Pomodoro stopped" -u low
+
+pkill -RTMIN+12 waybar 2>/dev/null || true

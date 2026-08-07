@@ -12,7 +12,7 @@ if [[ $phase == work ]]; then
   echo "break running $end_epoch" >"$state_file"
   omarchy-notification-send "🍅" "Work session complete" "Time for a ${break_minutes}-minute break" -u critical
   systemd-run --user --quiet --collect --on-active="${break_minutes}m" --unit=omarchy-pomodoro-break \
-    bash "$HOME/.config/waybar/pomodoro-advance.sh" break
+    pomodoro-advance break
 else
   rm -f "$state_file"
   omarchy-notification-send "🍅" "Break's over" "Ready for another pomodoro?" -u critical
