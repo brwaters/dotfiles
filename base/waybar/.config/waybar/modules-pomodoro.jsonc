@@ -1,0 +1,16 @@
+{
+  "custom/pomodoro": {
+    "exec": "~/.config/waybar/pomodoro.sh",
+    "return-type": "json",
+    "interval": 1,
+    "signal": 12,
+    "format": "{icon}{text}",
+    "format-icons": {
+      "idle": "",
+      "work": "󰔟",
+      "break": "󰅶"
+    },
+    "on-click": "~/.config/waybar/pomodoro-toggle.sh",
+    "on-click-right": "~/.config/waybar/pomodoro-pause.sh"
+  }
+}
