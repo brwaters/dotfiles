@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Theme switching regenerates ~/.config/mako/config from scratch, so mako
+# falls back to its default output= (follow the currently focused monitor).
+# Pin notifications to the primary display instead.
+echo "output=DP-1" >>~/.config/mako/config
+makoctl reload
