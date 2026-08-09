@@ -1,0 +1,29 @@
+#!/bin/bash
+set -euo pipefail
+
+# Replaces Omarchy's stock omarchy-hyprland-window-transparency-toggle,
+# which uses `setprop opaque toggle` - broken on Hyprland 0.53+ since the
+# default-opacity windowrule reasserts itself over that boolean almost
+# immediately, so the toggle has no visible effect. `setprop opacity
+# <value>` still works, so use that instead.
+#
+# Hyprland doesn't expose current forced opacity via `hyprctl activewindow
+# -j`, so state is tracked here by window address instead.
+TRANSLUCENT_OPACITY=0.65
+
+state_file="${XDG_RUNTIME_DIR:-/tmp}/hypr-transparency-toggled"
+touch "$state_file"
+
+addr=$(hyprctl activewindow -j | jq -r '.address')
+
+if grep -qxF "$addr" "$state_file"; then
+  hyprctl dispatch setprop "address:$addr" opacity 1.0 >/dev/null
+  # grep -v exits 1 when nothing remains after filtering (e.g. this was the
+  # only entry) - under set -e that would abort before the mv, leaving the
+  # stale address in the state file forever. The `|| true` keeps it going.
+  grep -vxF "$addr" "$state_file" >"$state_file.tmp" || true
+  mv "$state_file.tmp" "$state_file"
+else
+  hyprctl dispatch setprop "address:$addr" opacity "$TRANSLUCENT_OPACITY" >/dev/null
+  echo "$addr" >>"$state_file"
+fi

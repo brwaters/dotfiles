@@ -13,6 +13,11 @@ size = 14
 padding.x = 14
 padding.y = 14
 decorations = "None"
+# Event Horizon's imported theme config sets opacity = 0.45, which caps
+# Alacritty's own background opacity independent of Hyprland's compositor-
+# level window opacity - meaning the Super+Backspace toggle could never
+# reach true full opacity. Force it back to fully opaque here.
+opacity = 1.0
 
 [keyboard]
 bindings = [
