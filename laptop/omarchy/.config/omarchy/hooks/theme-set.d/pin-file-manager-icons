@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+
+# Theme switching runs omarchy-theme-set-gnome, which sets the GNOME icon
+# theme from the active theme's icons.theme file - an arbitrary color
+# choice baked into each theme (e.g. Event Horizon ships Yaru-magenta
+# despite a cyan #26bbd9 accent), and none of the installed Yaru variants
+# match the simple line-art folder style actually wanted here anyway.
+#
+# That style turned out to be GTK's own symbolic icon set (Adwaita's
+# folder-symbolic.svg and friends) - GTK's icon lookup falls through to
+# "<name>-symbolic" as a last resort when a theme (like hicolor) has no
+# plain "<name>" icon. Symbolic SVGs are single-path with a hardcoded
+# fill="#2e3436", so build a real icon theme from them with that color
+# swapped for the active theme's actual accent hex - true arbitrary-color
+# matching, not picking from a fixed named palette like Yaru's.
+#
+# Read the source SVGs fresh from Adwaita every run rather than vendoring
+# copies, so this stays in sync if Adwaita's icons ever change upstream.
+
+SRC_DIR=/usr/share/icons/Adwaita/symbolic/places
+DEST_DIR=~/.local/share/icons/SimpleLines/scalable/places
+[[ -d $SRC_DIR ]] || exit 0
+
+COLORS_FILE=~/.config/omarchy/current/theme/colors.toml
+[[ -f $COLORS_FILE ]] || exit 0
+
+ACCENT=$(grep -oP '^accent\s*=\s*"\K#[0-9A-Fa-f]{6}' "$COLORS_FILE" | head -1)
+[[ -n $ACCENT ]] || exit 0
+
+mkdir -p ~/.local/share/icons/SimpleLines
+cat >~/.local/share/icons/SimpleLines/index.theme <<EOF
+[Icon Theme]
+Name=SimpleLines
+Comment=Minimal line-art folder icons, recolored to match the active Omarchy theme's accent
+Inherits=Adwaita,hicolor
+Directories=scalable/places
+
+[scalable/places]
+Size=48
+MinSize=8
+MaxSize=512
+Type=Scalable
+Context=Places
+EOF
+
+mkdir -p "$DEST_DIR"
+for src in "$SRC_DIR"/*-symbolic.svg; do
+  [[ -f $src ]] || continue
+  name=$(basename "$src" | sed 's/-symbolic\.svg$/.svg/')
+  sed "s/#2e3436/$ACCENT/g" "$src" >"$DEST_DIR/$name"
+done
+
+gsettings set org.gnome.desktop.interface icon-theme "SimpleLines"
