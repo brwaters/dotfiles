@@ -15,12 +15,17 @@ set -euo pipefail
 # swapped for the active theme's actual accent hex - true arbitrary-color
 # matching, not picking from a fixed named palette like Yaru's.
 #
+# Also covers mimetypes (archives, documents, executables, etc.) - without
+# this, only folders get the line-art/accent treatment and everything else
+# falls through to Adwaita's own uncolored default style, which looks
+# inconsistent next to the recolored folders.
+#
 # Read the source SVGs fresh from Adwaita every run rather than vendoring
 # copies, so this stays in sync if Adwaita's icons ever change upstream.
 
-SRC_DIR=/usr/share/icons/Adwaita/symbolic/places
-DEST_DIR=~/.local/share/icons/SimpleLines/scalable/places
-[[ -d $SRC_DIR ]] || exit 0
+ADWAITA_SYMBOLIC=/usr/share/icons/Adwaita/symbolic
+DEST_BASE=~/.local/share/icons/SimpleLines/scalable
+[[ -d $ADWAITA_SYMBOLIC ]] || exit 0
 
 COLORS_FILE=~/.config/omarchy/current/theme/colors.toml
 [[ -f $COLORS_FILE ]] || exit 0
@@ -32,9 +37,9 @@ mkdir -p ~/.local/share/icons/SimpleLines
 cat >~/.local/share/icons/SimpleLines/index.theme <<EOF
 [Icon Theme]
 Name=SimpleLines
-Comment=Minimal line-art folder icons, recolored to match the active Omarchy theme's accent
+Comment=Minimal line-art folder and mimetype icons, recolored to match the active Omarchy theme's accent
 Inherits=Adwaita,hicolor
-Directories=scalable/places
+Directories=scalable/places,scalable/mimetypes
 
 [scalable/places]
 Size=48
@@ -42,13 +47,27 @@ MinSize=8
 MaxSize=512
 Type=Scalable
 Context=Places
+
+[scalable/mimetypes]
+Size=48
+MinSize=8
+MaxSize=512
+Type=Scalable
+Context=MimeTypes
 EOF
 
-mkdir -p "$DEST_DIR"
-for src in "$SRC_DIR"/*-symbolic.svg; do
-  [[ -f $src ]] || continue
-  name=$(basename "$src" | sed 's/-symbolic\.svg$/.svg/')
-  sed "s/#2e3436/$ACCENT/g" "$src" >"$DEST_DIR/$name"
+for context in places mimetypes; do
+  src_dir="$ADWAITA_SYMBOLIC/$context"
+  dest_dir="$DEST_BASE/$context"
+  [[ -d $src_dir ]] || continue
+  mkdir -p "$dest_dir"
+  for src in "$src_dir"/*-symbolic.svg; do
+    [[ -f $src ]] || continue
+    name=$(basename "$src" | sed 's/-symbolic\.svg$/.svg/')
+    # Adwaita's own source has a minor inconsistency: most icons use
+    # #2e3436 but a few use #2e3434 - replace both.
+    sed -E "s/#2e343[46]/$ACCENT/g" "$src" >"$dest_dir/$name"
+  done
 done
 
 gsettings set org.gnome.desktop.interface icon-theme "SimpleLines"
