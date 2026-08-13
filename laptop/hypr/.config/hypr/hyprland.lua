@@ -28,8 +28,9 @@ require("default.hypr.toggles")
 -- Add any other personal Hyprland configuration below.
 -- o.window("qemu", { workspace = "5" })
 
--- Discord: open on workspace 10, don't steal focus when it does.
-o.window("^(discord)$", { workspace = "10" })
+-- Discord: open on workspace 10 without switching your view there, and don't
+-- steal focus when it does.
+o.window("^(discord)$", { workspace = "10 silent" })
 o.window({ class = "^(discord)$", workspace = "10" }, { no_initial_focus = true })
 
 -- Round corners on all floating windows.
