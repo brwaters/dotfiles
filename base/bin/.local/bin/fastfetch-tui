@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-exec bash -lc 'fastfetch; read -n 1 -s'
