@@ -169,6 +169,9 @@ use it to move faster when the desktop's turn comes.
   isn't installed anymore (replaced by Tensaku), btop not worth a custom
   size for now.
 - `autostart.lua` — Discord launch on login
+- Removed all dead pre-Quattro `.conf` files from tracking (verified
+  `hyprsunset.conf`/`xdph.conf` are still genuinely live before excluding
+  them from the cleanup, rather than assuming based on the others' pattern)
 
 **Plugin clones:**
 - `recon.keyboard-layout` — T2 "Apple Headset" device-selection fix
@@ -206,10 +209,6 @@ The actual fix is per call site:
   redirect the one line. Used for the screensaver fix.
 
 **Open items:**
-- Clean up dead `.conf` files still tracked (`bindings.conf`,
-  `bindings-mac.conf`, `envs.conf`, `hyprland.conf`, `input.conf`,
-  `looknfeel.conf`, `monitors.conf`, `windows.conf`, `autostart.conf`,
-  `hyprlock.conf`, `hypridle.conf`)
 - `laptop/waybar` and `desktop/waybar` — dead, but check whether the custom
   `tailscale.sh`/`tailscale-toggle.sh` logic is now redundant with the stock
   `TailscaleIcon.qml` panel plugin before deleting (same pattern as the
