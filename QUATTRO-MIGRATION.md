@@ -73,11 +73,17 @@ use it to move faster when the desktop's turn comes.
   failure in the live pre-reboot session — resolved cleanly on the real
   reboot, not a real problem.
 - **PATH ordering**: `/usr/share/omarchy/bin` comes before `~/.local/bin` in
-  `$PATH`. Any personal script override placed in `~/.local/bin` (the
-  documented override pattern) gets silently shadowed by a stock Omarchy
-  script of the same name. Confirmed affecting `omarchy-launch-webapp`,
-  `omarchy-launch-about`, `fastfetch-tui`, `omarchy-screensaver` on the
-  laptop — **not yet fixed as of this writing**, see Open Items below.
+  `$PATH`, so a personal script placed in `~/.local/bin` under the *same
+  name* as a stock Omarchy script gets silently shadowed — confirmed
+  affecting `omarchy-launch-webapp`, `omarchy-launch-about`, `fastfetch-tui`,
+  `omarchy-screensaver` on the laptop. **Do not "fix" this by reordering
+  PATH** — checked `default/bash/envs` directly: the append (not prepend) is
+  deliberate, with an idempotency guard around it, real engineering care, not
+  an oversight. There's no per-command override directory the way plugins
+  get `~/.config/omarchy/plugins/` (`omarchy dev link` is a different, much
+  heavier tool for developing Omarchy itself, not for shadowing one script).
+  The actual fix is per call site, not global — see Open Items / the
+  screensaver fix below for the pattern that actually works.
 - Any `~/.config/<app>/<file>` that's a stow symlink can get silently
   replaced by a disconnected regular file if some other tool does an atomic
   write (temp-file + rename) instead of writing through the symlink — this
@@ -164,11 +170,36 @@ use it to move faster when the desktop's turn comes.
 - `recon.monitor` — display-scale preset swapped `1.6` → `1.67`
 - `recon.workspaces` — persistent workspaces 1–10 (was 1–5 + active only),
   workspace 10 labeled "D" for Discord
+- `recon.idle` — redirects the idle service's screensaver launch to
+  `recon-launch-screensaver` (see below) instead of trying to shadow the
+  stock name
+
+**Personal bin scripts (`laptop/bin`):**
+- `recon-screensaver` — fork of `omarchy-screensaver`, `ttfx` frame rate
+  `120` → `30` (the only real performance lever; nothing else in the script
+  is expensive)
+- `recon-launch-screensaver` — fork of `omarchy-launch-screensaver`, same
+  terminal-selection/multi-monitor logic, points at `recon-screensaver`
+  instead of the stock name
+
+**Override pattern reference (for the remaining `PATH`-shadowed items):**
+Confirmed the "just fix PATH" instinct was wrong — see the PATH note above.
+The actual fix is per call site:
+- If a stock **keybinding** calls the shadowed command (e.g.
+  `omarchy-launch-webapp`, baked in via `{ webapp = "..." }` in
+  `applications.lua`): `hl.unbind` + `o.bind` with your own command directly
+  in `bindings.lua`, following the pattern already documented in its own
+  template comment. Not yet done — still applies to the web app shortcuts
+  (`omarchy-launch-webapp`) and `omarchy-launch-about`/`fastfetch-tui`
+  (need to find their actual call sites first, likely also keybindings).
+- If a stock **plugin/service** calls it (e.g. the idle service calling
+  `omarchy-launch-screensaver`): `omarchy plugin clone` the plugin and
+  redirect the one line — this is the pattern used for the screensaver fix
+  above, and worked cleanly.
 
 **Open items:**
-- Fix `~/.local/bin` PATH-shadowing so `omarchy-launch-webapp`,
-  `omarchy-launch-about`, `fastfetch-tui`, `omarchy-screensaver` actually
-  take effect
+- Apply the override pattern above to `omarchy-launch-webapp`,
+  `omarchy-launch-about`, `fastfetch-tui` (find their call sites first)
 - Clean up dead `.conf` files still tracked (`bindings.conf`,
   `bindings-mac.conf`, `envs.conf`, `hyprland.conf`, `input.conf`,
   `looknfeel.conf`, `monitors.conf`, `windows.conf`, `autostart.conf`,
@@ -178,9 +209,10 @@ use it to move faster when the desktop's turn comes.
   `TailscaleIcon.qml` panel plugin before deleting (same pattern as the
   alacritty config turning out to be mostly-stock)
 - Review `environment-d` packages (`base`/`laptop`/`desktop`) —
-  `local-bin-path.conf` may be directly relevant to the PATH item above
-  (systemd environment.d affects the graphical session's PATH, not just
-  shell PATH)
+  `local-bin-path.conf` may be relevant to the PATH item above (systemd
+  environment.d affects the graphical session's PATH, not just shell PATH) —
+  though note the PATH ordering itself should NOT be changed, just worth
+  understanding what this file actually does
 - Confirm T2 sleep-mode test outcome (deep vs s2idle) and update the T2
   section above either way
 
