@@ -150,7 +150,12 @@ use it to move faster when the desktop's turn comes.
 ## Config port status (laptop)
 
 **Done:**
-- `bindings.lua` — touchpad toggle (`SUPER+Z`)
+- `bindings.lua` — touchpad toggle (`SUPER+Z`), About (`SUPER+A` → stock
+  `omarchy-launch-about`, replacing the obsolete `fastfetch-tui` +
+  tag-based-sizing override chain), web app shortcuts
+  (`SUPER+SHIFT+A/C/E/Y` → Firefox directly, replacing the shadowed
+  `omarchy-launch-webapp` override; Calendar/Email also got their original
+  destinations back, iCloud/Gmail instead of stock's Hey.com)
 - `input.lua` — full port (keyboard layout, repeat rate, touchpad tuning,
   Magic Mouse 2 sensitivity, per-terminal scroll speeds)
 - `monitors.lua` — pinned `eDP-1` @ scale `1.67` (macOS "More Space" parity)
@@ -182,24 +187,25 @@ use it to move faster when the desktop's turn comes.
   terminal-selection/multi-monitor logic, points at `recon-screensaver`
   instead of the stock name
 
-**Override pattern reference (for the remaining `PATH`-shadowed items):**
+**Override pattern reference** (all three originally-flagged PATH-shadowed
+items are now resolved — keeping this for the next time something similar
+comes up):
 Confirmed the "just fix PATH" instinct was wrong — see the PATH note above.
 The actual fix is per call site:
 - If a stock **keybinding** calls the shadowed command (e.g.
   `omarchy-launch-webapp`, baked in via `{ webapp = "..." }` in
   `applications.lua`): `hl.unbind` + `o.bind` with your own command directly
   in `bindings.lua`, following the pattern already documented in its own
-  template comment. Not yet done — still applies to the web app shortcuts
-  (`omarchy-launch-webapp`) and `omarchy-launch-about`/`fastfetch-tui`
-  (need to find their actual call sites first, likely also keybindings).
+  template comment. Used for the web app shortcuts.
+- If the override target is now redundant with a stock feature (e.g.
+  `fastfetch-tui`/`omarchy-launch-about`, superseded by the new
+  self-sizing About window): just drop the override and rebind the key to
+  the stock command directly. No shadowing fix needed at all.
 - If a stock **plugin/service** calls it (e.g. the idle service calling
   `omarchy-launch-screensaver`): `omarchy plugin clone` the plugin and
-  redirect the one line — this is the pattern used for the screensaver fix
-  above, and worked cleanly.
+  redirect the one line. Used for the screensaver fix.
 
 **Open items:**
-- Apply the override pattern above to `omarchy-launch-webapp`,
-  `omarchy-launch-about`, `fastfetch-tui` (find their call sites first)
 - Clean up dead `.conf` files still tracked (`bindings.conf`,
   `bindings-mac.conf`, `envs.conf`, `hyprland.conf`, `input.conf`,
   `looknfeel.conf`, `monitors.conf`, `windows.conf`, `autostart.conf`,
