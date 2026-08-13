@@ -101,6 +101,21 @@ use it to move faster when the desktop's turn comes.
   via the Quickshell display-scale/font-size panel. Check `ls -la` (look for
   `l` vs `-` in the permissions) on anything you suspect changed.
 
+## Lost features (no Quattro replacement yet)
+
+- **Websearch fallback in the app launcher.** Pre-Quattro used `walker` +
+  `elephant` (a whole provider ecosystem: `elephant-all`, `elephant-calc`,
+  `elephant-clipboard`, `elephant-websearch`, etc.), all explicitly retired
+  in the migration script's package-removal list. The new Quickshell
+  launcher's search (`shell/services/AppSearch.js`,
+  `shell/Ui/SearchableDropdown.qml`) is local-app-only — checked both
+  directly, zero references to web search, URLs, or a search-engine concept
+  anywhere. Old config (`base/elephant/.config/elephant/websearch.toml`) set
+  DuckDuckGo as the default fallback engine; removed from tracking since
+  there's nothing to port it to, but documenting here in case Quattro adds
+  an equivalent later (worth checking again on future RC releases, or
+  filing an upstream feature request if this is wanted back).
+
 ## T2 Mac specific (won't apply to desktop)
 
 - The T2-defaults migration step reverts custom sleep-mode fixes:
