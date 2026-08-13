@@ -122,12 +122,20 @@ use it to move faster when the desktop's turn comes.
   `/etc/limine-entry-tool.d/t2-mac.conf` gets regenerated with stock
   `mem_sleep_default=deep`, silently overriding a prior `s2idle` fix in
   `/etc/default/limine` (last `mem_sleep_default=` occurrence in the merged
-  kernel cmdline wins). We deliberately left it at Quattro's stock `deep` to
-  test whether the underlying hang is actually fixed now. Fallback staged at
-  `/etc/limine-entry-tool.d/zz-t2-s2idle-fallback.conf.disabled` — rename off
-  `.disabled` + `sudo limine-mkinitcpio` to reapply `s2idle` if deep sleep
-  still hangs. **Verify testing outcome before doing this on desktop** (N/A
-  anyway, desktop presumably isn't a T2 Mac).
+  kernel cmdline wins). **Closed as not applicable, not tested**: turns out
+  suspend has been deliberately disabled on this machine since well before
+  Quattro (`~/.local/state/omarchy/toggles/suspend-off`, dated back on
+  3.8.x) — lid-close goes to hibernate, and there's no automatic path to
+  suspend at all (`logind`'s `IdleAction` is unset/`ignore` by default, and
+  the Quickshell idle service has no suspend concept in its code, only
+  `lock`/`screensaver` timers). Since suspend isn't used day-to-day here,
+  not worth spending effort verifying whether `deep` still hangs. Fallback
+  stays staged at `/etc/limine-entry-tool.d/zz-t2-s2idle-fallback.conf.disabled`
+  in case this ever changes — rename off `.disabled` + `sudo limine-mkinitcpio`
+  to reapply `s2idle`. **On desktop**: check whether suspend is actually used
+  there before assuming this doesn't matter — this machine's decision to
+  skip it was specific to how *this* machine is used, not a general Quattro
+  recommendation.
 - Filed upstream: **basecamp/omarchy#6833** — keyboard-layout bar widget can
   switch the wrong device. T2's audio controller exposes the headphone
   jack's inline remote as a fake HID keyboard ("Apple Headset", via
@@ -243,8 +251,8 @@ The actual fix is per call site:
   redirect the one line. Used for the screensaver fix.
 
 **Open items:**
-- Confirm T2 sleep-mode test outcome (deep vs s2idle) and update the T2
-  section above either way
+- None currently. T2 sleep-mode test closed as not applicable — see the T2
+  Mac section above.
 
 ## Upstream issues filed
 
