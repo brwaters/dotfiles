@@ -172,6 +172,12 @@ use it to move faster when the desktop's turn comes.
 - Removed all dead pre-Quattro `.conf` files from tracking (verified
   `hyprsunset.conf`/`xdph.conf` are still genuinely live before excluding
   them from the cleanup, rather than assuming based on the others' pattern)
+- Removed dead `laptop/waybar` package — `~/.config/waybar/` no longer
+  exists on disk at all, and the custom `tailscale.sh` status/toggle script
+  is comprehensively superseded by a stock `omarchy.tailscale` bar widget
+  (already enabled) with a full panel: machine browsing, Taildrop sending,
+  IP/hostname/DNS copy, keyboard shortcuts. `desktop/waybar` intentionally
+  left alone — that machine hasn't migrated yet
 
 **Plugin clones:**
 - `recon.keyboard-layout` — T2 "Apple Headset" device-selection fix
@@ -209,10 +215,6 @@ The actual fix is per call site:
   redirect the one line. Used for the screensaver fix.
 
 **Open items:**
-- `laptop/waybar` and `desktop/waybar` — dead, but check whether the custom
-  `tailscale.sh`/`tailscale-toggle.sh` logic is now redundant with the stock
-  `TailscaleIcon.qml` panel plugin before deleting (same pattern as the
-  alacritty config turning out to be mostly-stock)
 - Review `environment-d` packages (`base`/`laptop`/`desktop`) —
   `local-bin-path.conf` may be relevant to the PATH item above (systemd
   environment.d affects the graphical session's PATH, not just shell PATH) —
