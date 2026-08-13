@@ -34,3 +34,27 @@ o.bind("SUPER + Z", "Toggle touchpad", "omarchy toggle touchpad")
 -- About (stock omarchy-launch-about now auto-fits its own window size, so
 -- the old fastfetch-tui + tag-based sizing rule isn't needed anymore).
 o.bind("SUPER + A", "About", { omarchy = "about" })
+
+-- Web apps via Firefox instead of stock's Chromium (own custom
+-- omarchy-launch-webapp override never took effect -- ~/.local/bin is
+-- deliberately lower PATH priority than /usr/share/omarchy/bin, so it always
+-- lost to the stock script of the same name; rebinding directly here avoids
+-- the naming collision instead of fighting PATH order).
+local function firefox_webapp(url)
+  return o.launch('firefox --no-remote -P "WebApps" --new-window --name WebApp ' .. url)
+end
+
+hl.unbind("SUPER + SHIFT + A")
+o.bind("SUPER + SHIFT + A", "ChatGPT", firefox_webapp("https://chatgpt.com"))
+
+-- Calendar/Email: stock now points these at Hey.com instead of
+-- iCloud/Gmail, so restoring the original destinations too, not just switching
+-- the browser.
+hl.unbind("SUPER + SHIFT + C")
+o.bind("SUPER + SHIFT + C", "Calendar", firefox_webapp("https://www.icloud.com/calendar"))
+
+hl.unbind("SUPER + SHIFT + E")
+o.bind("SUPER + SHIFT + E", "Email", firefox_webapp("https://mail.google.com/mail/u/0/"))
+
+hl.unbind("SUPER + SHIFT + Y")
+o.bind("SUPER + SHIFT + Y", "YouTube", firefox_webapp("https://youtube.com/"))
