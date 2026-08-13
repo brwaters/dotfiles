@@ -29,9 +29,11 @@ require("default.hypr.toggles")
 -- o.window("qemu", { workspace = "5" })
 
 -- Discord: open on workspace 10 without switching your view there, and don't
--- steal focus when it does.
-o.window("^(discord)$", { workspace = "10 silent" })
-o.window({ class = "^(discord)$", workspace = "10" }, { no_initial_focus = true })
+-- steal focus when it does. Single unconditional match on class only --
+-- splitting no_initial_focus into a second rule gated on workspace = "10"
+-- raced against the first rule's own workspace assignment and let initial
+-- focus slip through at startup.
+o.window("^(discord)$", { workspace = "10 silent", no_initial_focus = true })
 
 -- Round corners on all floating windows.
 o.window({ float = true }, { rounding = 4 })
