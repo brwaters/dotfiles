@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-exec setsid uwsm-app -- firefox --no-remote -P "WebApps" --new-window --name WebApp "$1" "${@:2}"
