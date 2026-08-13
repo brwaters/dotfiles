@@ -84,6 +84,16 @@ use it to move faster when the desktop's turn comes.
   heavier tool for developing Omarchy itself, not for shadowing one script).
   The actual fix is per call site, not global — see Open Items / the
   screensaver fix below for the pattern that actually works.
+- **If you find a `~/.config/environment.d/*.conf` file trying to prepend
+  `~/.local/bin` to `PATH`** (we had one, `local-bin-path.conf`) — it's
+  likely dead. UWSM's `prepare-env.sh` re-sources `/etc/profile` (which
+  chains into the same append-only PATH logic above) *after*
+  `environment.d` runs, discarding any such prepend. Confirmed via
+  `systemctl --user show-environment` showing the stock order despite the
+  file being present and correctly symlinked. Check for this specifically
+  before assuming an old `environment.d` PATH override still works under
+  Quattro — it was probably a pre-Quattro workaround for the exact problem
+  above, now silently ineffective rather than erroring.
 - Any `~/.config/<app>/<file>` that's a stow symlink can get silently
   replaced by a disconnected regular file if some other tool does an atomic
   write (temp-file + rename) instead of writing through the symlink — this
@@ -178,6 +188,9 @@ use it to move faster when the desktop's turn comes.
   (already enabled) with a full panel: machine browsing, Taildrop sending,
   IP/hostname/DNS copy, keyboard shortcuts. `desktop/waybar` intentionally
   left alone — that machine hasn't migrated yet
+- Removed dead `laptop/environment-d/local-bin-path.conf` — see the PATH
+  regression note above. `desktop/environment-d`'s copy intentionally left
+  alone since it may still be effective under 3.8.x's session-startup flow
 
 **Plugin clones:**
 - `recon.keyboard-layout` — T2 "Apple Headset" device-selection fix
@@ -215,11 +228,6 @@ The actual fix is per call site:
   redirect the one line. Used for the screensaver fix.
 
 **Open items:**
-- Review `environment-d` packages (`base`/`laptop`/`desktop`) —
-  `local-bin-path.conf` may be relevant to the PATH item above (systemd
-  environment.d affects the graphical session's PATH, not just shell PATH) —
-  though note the PATH ordering itself should NOT be changed, just worth
-  understanding what this file actually does
 - Confirm T2 sleep-mode test outcome (deep vs s2idle) and update the T2
   section above either way
 
