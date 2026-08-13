@@ -182,6 +182,20 @@ use it to move faster when the desktop's turn comes.
 
 ## Config port status (laptop)
 
+**Gotcha: "reset bar to defaults" menu actions silently revert plugin clones.**
+Running a reset action (e.g. `omarchy bar defaults`, or an equivalent menu
+item) disables all `bar-widget`-kind plugin clones and re-enables their
+stock first-party equivalents in `shell.json` — happened to
+`recon.monitor`, `recon.keyboard-layout`, and `recon.workspaces`
+simultaneously from what looked like one action. Only `recon.idle`
+survived, because it's plugin kind `service`, not `bar-widget` — the reset
+appears scoped to bar widgets specifically. The clone's file content and
+symlink are untouched by this (don't need to re-symlink anything) — it's
+purely an enable/disable + `shell.json` reference flip. Fix: `omarchy
+plugin enable recon.<name>` for each affected one, then `omarchy restart
+shell`. Check `omarchy plugin list` for any `recon.*` entries showing
+`disabled` after running any kind of bar/shell reset.
+
 **Done:**
 - `bindings.lua` — touchpad toggle (`SUPER+Z`), About (`SUPER+A` → stock
   `omarchy-launch-about`, replacing the obsolete `fastfetch-tui` +
