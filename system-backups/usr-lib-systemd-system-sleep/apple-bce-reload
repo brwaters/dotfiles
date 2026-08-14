@@ -1,0 +1,77 @@
+#!/bin/bash
+LOG=/home/recon/Documents/OmarchyOnOtherNotes/bce-hook.log
+TS() { date '+[%H:%M:%S]'; }
+
+case "$1/$2" in
+  pre/hibernate)
+    echo "$(TS) PRE-HIBERNATE: unbinding apple_bce" >> "$LOG"
+
+    if [ -e /sys/bus/pci/drivers/aaudio/0000:01:00.3 ]; then
+        echo "0000:01:00.3" > /sys/bus/pci/drivers/aaudio/unbind
+        echo "$(TS) aaudio unbound" >> "$LOG"
+    fi
+
+    if [ -e /sys/bus/pci/drivers/apple-bce/0000:01:00.1 ]; then
+        echo "0000:01:00.1" > /sys/bus/pci/drivers/apple-bce/unbind
+        echo "$(TS) apple-bce unbound" >> "$LOG"
+    fi
+
+    # Wait for bce-vhci cascade cleanup before attempting modprobe -r.
+    # The cascade is async — the module stays busy for a few seconds after unbind.
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if modprobe -r apple_bce 2>/dev/null; then
+            echo "$(TS) module removed (try $i) — image saved without apple_bce" >> "$LOG"
+            break
+        fi
+        sleep 1
+    done
+
+    if lsmod | grep -q apple_bce; then
+        echo "$(TS) module still loaded after retries — proceeding (post-hook will rebind)" >> "$LOG"
+    fi
+    ;;
+
+  post/hibernate)
+    echo "" >> "$LOG"
+    echo "$(TS) POST-RESUME diagnostics:" >> "$LOG"
+    echo "$(TS)   module loaded: $(lsmod | grep -c apple_bce)" >> "$LOG"
+    echo "$(TS)   apple-bce bound: $(ls /sys/bus/pci/drivers/apple-bce/ 2>/dev/null | tr '\n' ' ')" >> "$LOG"
+    echo "$(TS)   /dev/input before: $(ls /dev/input/ 2>/dev/null | tr '\n' ' ')" >> "$LOG"
+
+    if ! lsmod | grep -q apple_bce; then
+        # Module was removed pre-hibernate — load it fresh now
+        echo "$(TS) module not loaded — fresh modprobe" >> "$LOG"
+        if modprobe apple_bce 2>>"$LOG"; then
+            echo "$(TS) modprobe succeeded" >> "$LOG"
+        else
+            echo "$(TS) modprobe FAILED" >> "$LOG"
+        fi
+    elif [ -e /sys/bus/pci/drivers/apple-bce/0000:01:00.1 ]; then
+        # Module loaded and device already bound — loaded fresh on resume, nothing to do
+        echo "$(TS) module loaded and device already bound — no rebind needed" >> "$LOG"
+    else
+        # Module was in the image (unbind-only pre-hibernate) but the device
+        # ended up unbound. A plain PCI bind write for aaudio fails silently
+        # here (confirmed 2026-08-13: errors "Invalid argument" -- aaudio is
+        # registered by apple_bce itself, not independently bindable in this
+        # state). Full module reload handles both apple-bce and aaudio
+        # correctly, same as the "not loaded" branch above.
+        echo "$(TS) module loaded but device unbound — reloading module fully" >> "$LOG"
+        if modprobe -r apple_bce 2>>"$LOG" && modprobe apple_bce 2>>"$LOG"; then
+            echo "$(TS) module reload succeeded" >> "$LOG"
+        else
+            echo "$(TS) module reload FAILED" >> "$LOG"
+        fi
+    fi
+
+    echo "$(TS) running udevadm settle" >> "$LOG"
+    udevadm settle --timeout=15
+
+    echo "$(TS) POST-RESUME final state:" >> "$LOG"
+    echo "$(TS)   module loaded: $(lsmod | grep -c apple_bce)" >> "$LOG"
+    echo "$(TS)   apple-bce bound: $(ls /sys/bus/pci/drivers/apple-bce/ 2>/dev/null | tr '\n' ' ')" >> "$LOG"
+    echo "$(TS)   /dev/input after: $(ls /dev/input/ 2>/dev/null | tr '\n' ' ')" >> "$LOG"
+    echo "$(TS)   kbd symlink: $(ls /dev/input/by-id/*kbd* 2>/dev/null || echo NONE)" >> "$LOG"
+    echo "$(TS) hook complete" >> "$LOG"
+    ;;
+esac
