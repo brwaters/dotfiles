@@ -10,6 +10,23 @@ use it to move faster when the desktop's turn comes.
 
 ---
 
+## Untracked desktop state to check before migrating
+
+- **Nautilus accent-color icon script.** A script exists (desktop only, likely
+  not yet committed to this repo) that watches the Omarchy theme's accent
+  color and applies it to a set of SimpleIcons-derived SVGs, integrated with
+  Nautilus — probably a `nautilus-python` extension following the same
+  pattern as `localsend.py`/`transcode.py` in
+  `~/.local/share/nautilus-python/extensions/` on the laptop, which are also
+  untracked. Confirmed not present anywhere in this repo (`base/` or
+  `desktop/`) or in laptop `.bash_history`/`nautilus-python` dirs as of
+  2026-08-13 — it only lives on desktop's disk. **Before migrating desktop,
+  locate it, move it into a stow package (`desktop/nautilus-python/...` or
+  similar per this repo's "Adding a new file to the dotfiles" convention in
+  `CLAUDE.md`), and commit it** — otherwise the migration's package
+  removals/theme-state-path changes could silently break or lose it, the same
+  way `laptop/waybar`'s `tailscale.sh` almost did.
+
 ## Before you start (any machine)
 
 - **Check `/etc/pacman.conf` for `IgnorePkg` or other custom entries first.**
@@ -237,6 +254,25 @@ shell`. Check `omarchy plugin list` for any `recon.*` entries showing
 - `recon.idle` — redirects the idle service's screensaver launch to
   `recon-launch-screensaver` (see below) instead of trying to shadow the
   stock name
+- `recon.indicators` — fixes `StayAwake.qml`, which broke the moment
+  `recon.idle` replaced `omarchy.idle`. See the gotcha below — this pattern
+  will bite again for any other clone of a *service*-kind plugin.
+
+**Gotcha: cloning a service breaks any other widget that references it by
+literal id.** Service lookups (`shell.qml`'s `serviceFor`/`_syncServices`)
+key strictly off the plugin's own id — `clonedFrom` in a clone's manifest is
+only used for IPC target routing, it's never consulted by service lookups
+despite `omarchy-plugin-clone`'s own comment claiming otherwise ("the shell
+uses clonedFrom to route those calls"). So cloning `omarchy.idle` →
+`recon.idle` silently broke `StayAwake.qml` (hardcoded
+`firstPartyServiceFor("omarchy.idle")`, returned `null` once the original
+was disabled) — found only when it stopped working days later, not at
+clone time. Before cloning any `service`-kind plugin, `grep -rl
+'"<plugin-id>"' ~/.local/share/omarchy/shell/` first to find every widget
+that references it by literal id, and check each one still resolves
+afterward. This is a personal-setup issue, not an upstream bug report —
+it's specific to renaming the active service via a clone, not something
+that affects stock installs.
 
 **Personal bin scripts (`laptop/bin`):**
 - `recon-screensaver` — fork of `omarchy-screensaver`, `ttfx` frame rate
