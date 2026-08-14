@@ -333,7 +333,7 @@ Panel {
   }
 
   function setTextSize(px) {
-    textScaleProc.command = ["omarchy-display-text-size", String(px)]
+    textScaleProc.command = ["recon-display-text-size", String(px)]
     if (!textScaleProc.running) textScaleProc.running = true
   }
 
