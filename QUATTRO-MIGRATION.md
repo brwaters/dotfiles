@@ -248,7 +248,9 @@ shell`. Check `omarchy plugin list` for any `recon.*` entries showing
 
 **Plugin clones:**
 - `recon.keyboard-layout` — T2 "Apple Headset" device-selection fix
-- `recon.monitor` — display-scale preset swapped `1.6` → `1.67`
+- `recon.monitor` — display-scale preset swapped `1.6` → `1.67`; text-size
+  slider redirected to `recon-display-text-size` (see below) instead of the
+  stock command, so it can never overwrite foot's font size
 - `recon.workspaces` — persistent workspaces 1–10 (was 1–5 + active only),
   workspace 10 labeled "D" for Discord
 - `recon.idle` — redirects the idle service's screensaver launch to
@@ -281,6 +283,16 @@ that affects stock installs.
 - `recon-launch-screensaver` — fork of `omarchy-launch-screensaver`, same
   terminal-selection/multi-monitor logic, points at `recon-screensaver`
   instead of the stock name
+- `recon-display-text-size` — fork of `omarchy-display-text-size`, identical
+  except `set_terminal_size()` no longer touches `foot.ini` at all. That
+  stock command does a blind regex overwrite of foot's `:size=` on every
+  call — it would silently clobber a manually-set font size the next time
+  the display panel's text-size slider (or the raw CLI command) is used for
+  literally anything else. Called from `recon.monitor`'s slider instead of
+  the stock name. **Residual gap**: the raw CLI typed directly still hits
+  the stock script and would still overwrite `foot.ini` — no way to cover
+  that without the same PATH-shadowing fight documented below. This covers
+  the panel slider specifically, the normal way it's triggered.
 
 **Override pattern reference** (all three originally-flagged PATH-shadowed
 items are now resolved — keeping this for the next time something similar
