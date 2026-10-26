@@ -1,5 +1,14 @@
 # Dotfiles — Claude Instructions
 
+## Omarchy Quattro migration (read first)
+
+The laptop runs Omarchy Quattro (4.x); the desktop is still on 3.8.x until it
+migrates. Before any Quattro-related work, and **before upgrading or
+configuring the desktop**, read `QUATTRO-MIGRATION.md`. Its "Desktop runbook"
+section is the step-by-step plan for the desktop, and the rest of the guide
+explains the gotchas behind each step. Don't `git pull` on the desktop until
+it has been upgraded to Quattro.
+
 ## Repo structure
 
 Three top-level stow roots:

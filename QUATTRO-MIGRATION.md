@@ -19,6 +19,106 @@ use it to move faster when the desktop's turn comes.
 
 ---
 
+## Desktop runbook (start here if you're the agent on the desktop)
+
+The laptop is the reference implementation. Copy its *patterns* from
+`laptop/`, but don't modify `laptop/` itself; desktop changes go in
+`desktop/` (or `base/` only for something genuinely identical on both
+machines). The rest of this guide explains the *why* behind each step;
+read the referenced sections before acting.
+
+**Desktop facts:** user `brendon` (laptop is `recon`, so a fresh
+`omarchy plugin clone` here makes `brendon.*` ids; copying the laptop's
+`recon.*` folders also works, since the id lives in `manifest.json`).
+NVIDIA GPU. Three monitors: `DP-1` 2560x1440@165 primary at `0x0`,
+`HDMI-A-1` 1920x1080@144 at `-1920x-360`, `HDMI-A-2` 1920x1080@144 at
+`-1920x720`, all scale 1. Old config: `desktop/hypr/.config/hypr/*.conf`
+(still the source of truth for what to port; delete them only after
+porting).
+
+**Before upgrading (on 3.8.x):**
+1. Confirm `desktop/omarchy/.config/omarchy/hooks/theme-set.d/pin-file-manager-icons`
+   is the "Nautilus accent-color icon script" (see next section). If
+   something else exists on disk that isn't in the repo, commit it first.
+2. Do the "Before you start" checklist: `pacman.conf` custom entries /
+   `IgnorePkg`, back up `/var/lib/iwd/`. Decide whether this machine uses
+   suspend (see the T2 section's note; desktop may differ).
+3. Do **not** `git pull` yet (see Status).
+
+**Upgrade:** follow "Upgrade sequence that actually worked". Never point a
+Quattro system at `stable` while stable is still 3.8.x.
+
+**After the second reboot:**
+1. `git pull`. Quattro seeds `~/.config/hypr/*.lua` as plain files: move
+   each into `desktop/hypr/.config/hypr/` and restow (CLAUDE.md "Adding a
+   new file"), then edit them there.
+2. Port the old desktop `.conf` files into those Lua files, verifying syntax
+   against `/usr/share/omarchy/default/hypr/*.lua` (see "Dotfiles
+   restructuring approach"; don't trust remembered syntax):
+   - `monitors.conf` → `monitors.lua`: the three monitors above. Workspace
+     pins (1–8 → `DP-1`, 9 → `HDMI-A-1`, 10 → `HDMI-A-2`) probably via
+     `hl.workspace_rule` (used in `default/hypr/qconsole.lua`; check its
+     `monitor` field in `/usr/share/hypr/stubs/hl.meta.lua`).
+   - `autostart.conf` → `autostart.lua`: Firefox on ws 9 silent, Discord on
+     ws 10 silent, `openrgb --server`, `sleep 10 && personal_openrgb_set_colors`,
+     `xrandr --output DP-1 --primary` (XWayland primary, for Steam
+     notifications). See `laptop/hypr/.config/hypr/autostart.lua`.
+   - `windows.conf` → bottom of `hyprland.lua` via `o.window(...)`:
+     Discord ws 10 + no initial focus, Firefox ws 9 no initial focus,
+     floating rounding 4 (or 0, see square corners below), Steam sign-in
+     window (ws 1, centered), Steam main window size 1800x1000. The old
+     fastfetch/btop/satty sizing rule was dropped on the laptop (see
+     "Config port status"). `misc.vrr = 2` → Lua equivalent.
+   - `input.conf` → `input.lua`: `us,gr`, `compose:caps,grp:alts_toggle`,
+     repeat 40/600, numlock on, sensitivity 0, flat accel, per-terminal
+     touchpad scroll rules. See `laptop/hypr/.config/hypr/input.lua`.
+   - `hyprland.conf`'s NVIDIA `env` lines: Quattro's
+     `default/hypr/nvidia.lua` auto-detects and sets these; check `hyprctl
+     getenv`/`env` before adding anything.
+3. **Global workspaces** (required; the user does *not* want 4.5's
+   per-monitor 1–10/11–20 blocks): copy `laptop/hypr/.config/hypr/workspaces.lua`
+   (require it from `hyprland.lua` after `hypr.bindings`) and the
+   `recon.workspaces` plugin. See "4.5 update". This has only been tested
+   with one monitor; test the three-monitor case properly here: SUPER+1–0,
+   SUPER+SHIFT+ALT+arrows, plugging/unplugging, and that nothing gets
+   renumbered past 10.
+4. **Plugin clones and scripts** (copy from `laptop/` into `desktop/`):
+   - `recon.idle` + `laptop/bin` `recon-launch-screensaver` /
+     `recon-screensaver`. The desktop's screensaver behavior differs: waves on
+     `DP-1`, black on the side monitors. See the old
+     `desktop/bin/.local/bin/omarchy-launch-screensaver`,
+     `omarchy-screensaver-black`, and `omarchy-screensaver`. Fork
+     `recon-launch-screensaver` with that logic (the old names are shadowed
+     by PATH order, see "Known regressions").
+   - `recon.monitor`: the 1.67 scale preset is laptop-specific; the desktop
+     probably only needs the `recon-display-text-size` redirect (to protect
+     foot's font size), or nothing.
+   - Do NOT clone indicators or keyboard-layout (fixed upstream in 4.5).
+5. **Idle timings:** old `hypridle.conf` used screensaver 450s, lock 901s,
+   DPMS off 930s. Set `idle.screensaver`/`idle.lock` in
+   `~/.config/omarchy/shell.json`. Quickshell's idle service has no
+   DPMS-off step; check whether the lock plugin turns screens off, and
+   report back if screen-off is lost. Old `hyprlock.conf` (wallpaper only on
+   `DP-1`, input field on `DP-1`, no fingerprint) → check the Quickshell
+   lock plugin's options.
+6. **Pending feature ports** (see "Pre-Quattro features still to port"
+   below): square corners, Super+Backspace transparency,
+   pomodoro bindings (+ SUPER+U pseudo), mako-on-primary equivalent.
+   Shared ones (corners, transparency, pomodoro keys) arguably belong in
+   `base/`, but `base/hypr` currently only has `looknfeel.lua`. Ask the
+   user before restructuring.
+7. Stow `base/bin` here (pomodoro + transparency scripts).
+8. Cleanup once everything works: delete `desktop/hypr/*.conf`,
+   `desktop/waybar`, `desktop/environment-d/local-bin-path.conf` (dead
+   under UWSM, see "Known regressions"), `desktop/bin/omarchy-*screensaver*`
+   (once forked), the mako hooks in `desktop/omarchy/.../theme-set.d/`, and
+   `base/{walker,swayosd,waybar}`. Check for stow-symlink → regular-file
+   breakage (`ls -la`) and for bar resets disabling clones (`omarchy plugin
+   list`).
+9. Update this guide's Status and add any new gotchas.
+
+---
+
 ## Untracked desktop state to check before migrating
 
 - **Update 2026-10-25: probably found, already in the repo.** Commits
