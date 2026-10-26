@@ -1,12 +1,29 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
 BarWidget {
   id: root
   moduleName: "omarchy.workspaces"
+
+  // Global workspaces, not 4.5's per-monitor blocks (1-10, 11-20, ...): every
+  // bar shows the same 1-10 and marks the focused one, whichever monitor it's
+  // on. Pairs with hypr/workspaces.lua, which turns the blocks off on the
+  // Hyprland side. Otherwise kept close to stock 4.5 (layout glyph on the
+  // focused workspace, click it to cycle layout, smooth wheel scrolling).
+  readonly property var monitor: {
+    var window = root.QsWindow.window
+    var screen = window ? window.screen : null
+    return screen ? Hyprland.monitorFor(screen) : Hyprland.focusedMonitor
+  }
+
+  function activeWorkspaceId() {
+    return Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
+  }
 
   function workspaceById(id) {
     var values = Hyprland.workspaces.values
@@ -25,9 +42,130 @@ BarWidget {
   // default numbering (workspace 10 shown as "0") when not present here.
   readonly property var labelOverrides: ({ 10: "D" })
 
+  function dispatch(expression) {
+    if (root.bar) root.bar.run("hyprctl dispatch " + Util.shellQuote(expression))
+  }
+
   function focusWorkspace(id) {
-    if (!root.bar) return
-    root.bar.run("hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = \"" + id + "\" })"))
+    root.dispatch("hl.dsp.focus({ workspace = \"" + id + "\" })")
+  }
+
+  // A wheel notch moves one entry along the row, and a touchpad adds up its
+  // smaller deltas until they make a notch's worth.
+  property real wheelAccumulator: 0
+
+  function scrollWorkspaces(delta) {
+    var wheel = Util.wheelSteps(root.wheelAccumulator, delta)
+    root.wheelAccumulator = wheel.remainder
+    if (wheel.steps === 0) return
+
+    // Holds at either end rather than wrapping, so a touchpad swipe that runs
+    // long stops on the last workspace.
+    var ids = root.workspaceIds()
+    var index = ids.indexOf(root.activeWorkspaceId())
+    if (index === -1) return
+    var target = ids[Util.clamp(index - wheel.steps, 0, ids.length - 1)]
+    if (target !== ids[index]) root.focusWorkspace(target)
+  }
+
+  // The workspace each monitor shows carries its layout: a square tiles, a
+  // circle scrolls, and a triangle floats. Clicking it cycles to the next one,
+  // as Super + L does.
+  property string activeMode: "dwindle"
+  property bool modeStale: false
+
+  function modeGlyph(mode) {
+    if (mode === "scrolling") return "󰝥"
+    if (mode === "floating") return "󰔶"
+    return "󱓻"
+  }
+
+  // A layout only changes through the layout commands, which ask for a refresh,
+  // or a config reload, so each workspace's mode is read once and cached rather
+  // than running the script on every workspace switch.
+  property var modeCache: ({})
+  property int modeGeneration: 0
+  property int modeProcWorkspace: -1
+  property int modeProcGeneration: 0
+
+  function showActiveMode() {
+    var mode = root.modeCache[root.activeWorkspaceId()]
+    if (mode !== undefined) root.activeMode = mode
+    else readMode()
+  }
+
+  function readMode() {
+    if (modeProc.running) {
+      root.modeStale = true
+      return
+    }
+    var id = root.activeWorkspaceId()
+    if (id === -1) return
+    root.modeProcWorkspace = id
+    root.modeProcGeneration = root.modeGeneration
+    modeProc.command = ["omarchy-hyprland-workspace-layout-current", String(id)]
+    modeProc.running = true
+  }
+
+  function refresh() {
+    root.modeCache = ({})
+    root.modeGeneration++
+    readMode()
+  }
+
+  // The layout commands act on the focused workspace, which is the one marked
+  // on every bar, so no monitor hop is needed first.
+  function cycleLayout() {
+    if (root.bar) root.bar.run("omarchy-hyprland-workspace-layout-toggle")
+  }
+
+  Component.onCompleted: refresh()
+
+  Connections {
+    target: Hyprland
+    function onFocusedWorkspaceChanged() { root.showActiveMode() }
+    function onRawEvent(event) {
+      var name = event ? String(event.name) : ""
+      if (name === "configreloaded") root.refresh()
+      // Quickshell credits every workspace switch to the focused monitor, as
+      // the event doesn't say which one switched, and misses the workspace a
+      // monitor falls back to when its own is moved away. Moving workspaces
+      // between monitors switches the others, so ask Hyprland for the truth.
+      // A workspace that changes number is only learned by asking too. Every
+      // bar shares what Hyprland answers, so one asks after a plain switch.
+      var switched = name === "workspacev2" && root.monitor !== null && root.monitor.focused
+      if (switched || name === "moveworkspacev2" || name === "changeworkspaceid") {
+        Hyprland.refreshMonitors()
+        Hyprland.refreshWorkspaces()
+      }
+    }
+  }
+
+  Process {
+    id: modeProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var mode = text.trim()
+        // A read that started before a refresh may predate the change.
+        if (!mode || root.modeProcGeneration !== root.modeGeneration) return
+        root.modeCache[root.modeProcWorkspace] = mode
+        if (root.modeProcWorkspace === root.activeWorkspaceId()) root.activeMode = mode
+      }
+    }
+    onExited: {
+      if (!root.modeStale) return
+      root.modeStale = false
+      // Deferred: the process still reports running while it signals exit.
+      Qt.callLater(root.showActiveMode)
+    }
+  }
+
+  // Super + L and the default layout change the mode without a focus change,
+  // so they ask every bar to read it again.
+  ShellIpc {
+    target: "omarchy.workspaces"
+
+    function refresh(): void { root.broadcast("refresh") }
   }
 
   readonly property real trailingGap: root.vertical ? 0 : Style.spaceReal(1.5)
@@ -51,16 +189,20 @@ BarWidget {
 
         readonly property var workspace: root.workspaceById(modelData)
         readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
-        readonly property bool focused: Hyprland.focusedWorkspace !== null && Hyprland.focusedWorkspace.id === modelData
+        readonly property bool shown: root.activeWorkspaceId() === modelData
 
         bar: root.bar
-        text: focused ? "\uDB85\uDCFB" : (root.labelOverrides[modelData] || (modelData === 10 ? "0" : String(modelData)))
-        opacity: occupied || focused ? 1 : 0.5
+        text: shown ? root.modeGlyph(root.activeMode) : (root.labelOverrides[modelData] || (modelData === 10 ? "0" : String(modelData)))
+        opacity: occupied || shown ? 1 : 0.5
         horizontalMargin: 6
         verticalPadding: 6
         fixedWidth: root.vertical ? root.barSize : Style.space(20)
         fixedHeight: root.barSize
-        onPressed: function() { root.focusWorkspace(modelData) }
+        onPressed: function() {
+          if (shown) root.cycleLayout()
+          else root.focusWorkspace(modelData)
+        }
+        onWheelMoved: function(delta) { root.scrollWorkspaces(delta) }
       }
     }
   }

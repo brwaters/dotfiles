@@ -5,8 +5,13 @@ Working notes from migrating the laptop (T2 MacBook, host `axiom`) from Omarchy
 use it to move faster when the desktop's turn comes.
 
 **Status:**
-- Laptop (`axiom`, T2 MacBook): migrated 2026-08-13, RC channel, `4.0.0rc4-1`
-- Desktop: not yet migrated
+- Laptop (`axiom`, T2 MacBook): migrated 2026-08-13, RC channel, `4.0.0rc4-1`;
+  updated to `4.5.0rc1-1` on 2026-10-25 and plugin clones re-cloned against it
+  (see "4.5 update" below)
+- Desktop: not yet migrated. Plan: the desktop adapts itself from the
+  `laptop/` packages as the reference, rather than restructuring `laptop/`
+  into `base/` first. Blocked on rescuing the untracked Nautilus script (next
+  section).
 
 ---
 
@@ -246,22 +251,28 @@ shell`. Check `omarchy plugin list` for any `recon.*` entries showing
   regression note above. `desktop/environment-d`'s copy intentionally left
   alone since it may still be effective under 3.8.x's session-startup flow
 
-**Plugin clones:**
-- `recon.keyboard-layout` — T2 "Apple Headset" device-selection fix
+**Plugin clones** (re-cloned from 4.5.0rc1 on 2026-10-25, see "4.5 update"):
 - `recon.monitor` — display-scale preset swapped `1.6` → `1.67`; text-size
   slider redirected to `recon-display-text-size` (see below) instead of the
   stock command, so it can never overwrite foot's font size
-- `recon.workspaces` — persistent workspaces 1–10 (was 1–5 + active only),
-  workspace 10 labeled "D" for Discord
+- `recon.workspaces` — global workspaces 1–10 on every bar (stock 4.5 shows
+  per-monitor blocks), workspace 10 labeled "D" for Discord. Pairs with
+  `hypr/workspaces.lua`
 - `recon.idle` — redirects the idle service's screensaver launch to
   `recon-launch-screensaver` (see below) instead of trying to shadow the
   stock name
-- `recon.indicators` — fixes `StayAwake.qml`, which broke the moment
-  `recon.idle` replaced `omarchy.idle`. See the gotcha below — this pattern
-  will bite again for any other clone of a *service*-kind plugin.
+- *Retired in 4.5:* `recon.keyboard-layout` (upstream fixed #6833) and
+  `recon.indicators` (upstream fixed clone service lookup, see the gotcha
+  below)
 
-**Gotcha: cloning a service breaks any other widget that references it by
-literal id.** Service lookups (`shell.qml`'s `serviceFor`/`_syncServices`)
+**Gotcha (fixed upstream in 4.5, kept for history): cloning a service broke
+any other widget that referenced it by literal id.** As of 4.5,
+`shell.qml`'s `firstPartyServiceFor` goes through
+`pluginRegistry.resolveEnabledId()`, which maps `"omarchy.idle"` to whichever
+enabled clone has `clonedFrom: "omarchy.idle"`. Plugin facades also only
+allow the *stock* ids, so referencing `"recon.idle"` directly now returns
+`null`: the old `recon.indicators` fix broke Stay Awake again under 4.5. Keep
+referencing stock ids. Original 4.0 notes: Service lookups (`shell.qml`'s `serviceFor`/`_syncServices`)
 key strictly off the plugin's own id — `clonedFrom` in a clone's manifest is
 only used for IPC target routing, it's never consulted by service lookups
 despite `omarchy-plugin-clone`'s own comment claiming otherwise ("the shell
@@ -316,9 +327,60 @@ The actual fix is per call site:
 - None currently. T2 sleep-mode test closed as not applicable — see the T2
   Mac section above.
 
+## 4.5 update (laptop, 2026-10-25)
+
+`4.0.0rc4-1` → `4.5.0rc1-1`. Plugin clones don't follow upstream, so they were
+two months stale. To audit them, the stock version each clone was taken from
+was extracted from `/var/cache/pacman/pkg/omarchy-4.0.0rc{3,4}-1-any.pkg.tar.zst`
+(check clone dates against `pacman.log`, since some were taken on rc3). That
+gives a three-way comparison: old stock → clone (my edits) and old stock →
+new stock (upstream changes). Every clone's personal edit was 1–17 lines, so
+the fix was re-cloning fresh and re-applying the edits, not merging.
+
+**Re-clone without disturbing the live shell:** `omarchy plugin clone` refuses
+when the target dir exists (it does, as a stow symlink) and also enables and
+rescans. Instead, run its `copy_plugin` + `update_manifest` functions into a
+scratch dir, apply the edits there, then `rsync -a --delete` into the dotfiles
+package. The ids don't change, so there's no enable/disable step and the
+shell hot-reloads.
+
+What changed:
+- `recon.monitor` — stock now enables/disables monitors via
+  `hyprctl eval 'hl.monitor({...})'`, because `hyprctl keyword` is rejected
+  under the Lua config. The 4.0 clone still used `keyword`, so its toggle was
+  likely broken.
+- `recon.idle` — timer fixes (a timeout of 0 actually disables; editing
+  `shell.json` no longer restarts a pending timer).
+- `recon.indicators` — retired (see gotcha above). Stock also gained
+  PasswordlessSudo and RemoteSession indicators and dropped Dictation.
+- `laptop/bin` forks (`recon-screensaver`, `recon-launch-screensaver`,
+  `recon-display-text-size`): their stock originals are byte-identical
+  between rc4 and 4.5.0rc1, so nothing to port.
+- `recon.keyboard-layout` — retired. #6833 was fixed by switching the layout
+  on *every* keyboard on click, so the phantom "Apple Headset" can't steal it.
+- **Per-monitor workspaces (new in 4.5, opted out of).**
+  `default/hypr/monitor-workspaces.lua` gives every monitor its own block of
+  10 (laptop panel 1–10, next monitor 11–20, …), renumbers and moves
+  workspaces on start/reload/hotplug, and rebinds SUPER+1–0 and
+  SUPER+SHIFT+ALT+arrows to block-aware versions. `omarchy.lua` requires it
+  unconditionally, with no flag. The opt-out is two parts:
+  - `laptop/hypr/.config/hypr/workspaces.lua` (required from `hyprland.lua`
+    after `hypr.bindings`) replaces `o.workspaces.reconcile` with a no-op.
+    Its event handlers look it up at call time, so that disarms them all.
+    It also replaces `o.workspaces.focus`/`move_window`/`move_to_monitor`
+    with global versions and rebinds the keys, since stock binds captured
+    the old functions.
+  - `recon.workspaces` re-cloned from 4.5. It keeps the layout glyph,
+    click-to-cycle layout and wheel scrolling, but shows a global 1–10 and
+    marks the globally focused workspace instead of per-monitor slots.
+  - **For the desktop:** copy both pieces. The old `workspace=N,monitor:DP-1`
+    pins and Discord on 10 only make sense with global workspaces. Untested
+    so far on multiple monitors (the laptop only had eDP-1 during the change).
+
 ## Upstream issues filed
 
 - [basecamp/omarchy#6823](https://github.com/basecamp/omarchy/issues/6823) —
-  dictation bar icon errors when voxtype isn't installed
+  dictation bar icon errors when voxtype isn't installed (still open; the
+  Dictation indicator was dropped from the bar in 4.5)
 - [basecamp/omarchy#6833](https://github.com/basecamp/omarchy/issues/6833) —
-  keyboard-layout widget can target wrong device on T2 Macs
+  keyboard-layout widget can target wrong device on T2 Macs (fixed in 4.5)
