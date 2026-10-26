@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Theme switching regenerates ~/.config/mako/config from scratch, so any
+# border-radius the theme sets comes back. Within the global section, mako
+# still applies "last occurrence wins" - so this must be inserted right
+# before the first [criteria] header (last in the global section), not at
+# the top of the file, or the theme's own border-radius line (which comes
+# after) would win instead.
+# --follow-symlinks is required: plain `sed -i` writes a temp file and
+# renames it over the target, which replaces ~/.config/mako/config's
+# symlink with a plain file - breaking the link to the live theme config
+# so it stops picking up future theme changes entirely.
+# If the theme's config has no [criteria] sections at all, there's nothing
+# for the sed insert to anchor on - fall back to a plain append, which is
+# still global-scope-safe when there are no sections to be scoped inside of.
+if grep -q '^\[' ~/.config/mako/config; then
+  sed --follow-symlinks -i "0,/^\[/ s/^\[/border-radius=0\n[/" ~/.config/mako/config
+else
+  echo "border-radius=0" >>~/.config/mako/config
+fi
+makoctl reload

@@ -1,0 +1,16 @@
+{
+  "custom/pomodoro": {
+    "exec": "pomodoro-status",
+    "return-type": "json",
+    "interval": 1,
+    "signal": 12,
+    "format": "{icon}{text}",
+    "format-icons": {
+      "idle": "",
+      "work": "󰔟",
+      "break": "󰅶"
+    },
+    "on-click": "pomodoro-primary",
+    "on-click-right": "pomodoro-stop"
+  }
+}

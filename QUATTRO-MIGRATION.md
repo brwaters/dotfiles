@@ -10,13 +10,28 @@ use it to move faster when the desktop's turn comes.
   (see "4.5 update" below)
 - Desktop: not yet migrated. Plan: the desktop adapts itself from the
   `laptop/` packages as the reference, rather than restructuring `laptop/`
-  into `base/` first. Blocked on rescuing the untracked Nautilus script (next
-  section).
+  into `base/` first. The Nautilus-script blocker (next section) is most
+  likely resolved: confirm `pin-file-manager-icons` is the script.
+- **Don't `git pull` on the desktop before migrating it.** `main` has deleted
+  pre-Quattro files the desktop still uses live (`base/hypr/bindings.conf`,
+  `looknfeel.conf`, `base/alacritty`, etc.). Pulling first would leave
+  dangling stow symlinks on a 3.8.x system. Migrate, then pull.
 
 ---
 
 ## Untracked desktop state to check before migrating
 
+- **Update 2026-10-25: probably found, already in the repo.** Commits
+  `e2e617c`/`333c4c0` (Aug 9, pushed from the desktop but never pulled on the
+  laptop until 2026-10-25) added
+  `{desktop,laptop}/omarchy/.config/omarchy/hooks/theme-set.d/pin-file-manager-icons`.
+  It's a theme-set hook, not a nautilus-python extension. On every theme
+  switch it builds a "SimpleLines" icon theme from Adwaita's symbolic
+  folder/mimetype SVGs, recolored to the theme's accent from `colors.toml`.
+  Confirm this is the script on the desktop before treating the blocker as
+  closed. Under Quattro, check that its `~/.config/omarchy/current/theme/colors.toml`
+  path still resolves (theme state paths moved) and that `theme-set.d` hooks
+  still fire. Original note below.
 - **Nautilus accent-color icon script.** A script exists (desktop only, likely
   not yet committed to this repo) that watches the Omarchy theme's accent
   color and applies it to a set of SimpleIcons-derived SVGs, integrated with
@@ -31,6 +46,38 @@ use it to move faster when the desktop's turn comes.
   `CLAUDE.md`), and commit it** — otherwise the migration's package
   removals/theme-state-path changes could silently break or lose it, the same
   way `laptop/waybar`'s `tailscale.sh` almost did.
+
+## Pre-Quattro features still to port (from the Aug 7–9 desktop commits)
+
+Ten desktop commits (Aug 7–9) were merged into `main` on 2026-10-25. Five
+touched pre-Quattro files that `main` had already deleted. Those deletions
+were kept, so the content only lives in history now. `git show <hash>` to
+recover it.
+
+- **Square window corners** (`19800b3`). The Hyprland part was
+  `rounding = 0` in `base/hypr/looknfeel.conf`; port it to `looknfeel.lua`.
+  The swayosd / walker "square" theme / `zero-mako-rounding` hook parts
+  target retired apps (now dead on Quattro, still live on 3.8 desktop).
+  Check whether Quickshell's bar/OSD/notifications need their own rounding
+  override.
+- **Super+Backspace transparency toggle** (`2e50d90`, corrected by
+  `abde711`). The `base/bin/.local/bin/hypr-window-transparency-toggle`
+  script came through. Still to port: the `unbind`/rebind of
+  `SUPER + BACKSPACE` (was `bindings.conf`), `blur.ignore_opacity = true`
+  (`abde711` reversed `2e50d90`'s `false`; `true` is right), and the
+  terminal-tag opacity override (`windowrule = opacity 1.0 1.0, match:tag
+  terminal`). First check whether stock 4.5's toggle works now. The
+  alacritty opacity part is moot (foot is the terminal).
+- **Pomodoro** (`4cd72d4`, `5e686d0`). The `base/bin` scripts
+  (`pomodoro-primary/stop/status/advance`) came through. Still to port: the
+  `SUPER + P` / `SUPER + SHIFT + P` bindings, and moving stock Pseudo window
+  from `SUPER + P` to `SUPER + U`. The waybar module would need a Quickshell
+  bar widget (or a plugin) to show status.
+- **Mako on primary display** (`a767f11`, `pin-mako-output` hook). Mako is
+  retired; check whether Quickshell notifications have an output setting.
+- `base/bin` is a new stow package; it isn't stowed on the laptop yet.
+- `base/swayosd`, `base/walker`, `base/waybar` modules, and the mako hooks
+  are pre-Quattro only. Delete them once the desktop is migrated.
 
 ## Before you start (any machine)
 

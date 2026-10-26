@@ -1,0 +1,8 @@
+/* Inherit everything from Omarchy's default theme (which itself imports the
+   active theme's walker.css), then override the corner radius so it stays
+   square no matter what theme is active. */
+@import "../../../../.local/share/omarchy/default/walker/themes/omarchy-default/style.css";
+
+window .box-wrapper {
+  border-radius: 0;
+}
