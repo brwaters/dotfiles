@@ -21,10 +21,7 @@ Done so far: Hyprland Lua port (monitors, global workspaces, window rules,
 autostart, input), `recon.workspaces` widget (U/L labels, per-monitor
 highlight), file-manager icon hook fixed, key bindings.
 
-- [ ] **Try the new key bindings** (not pressed yet, only checked in the
-      bindings list): SUPER+SHIFT+A/C/E/Y Firefox web apps, SUPER+SHIFT+S
-      screenshot, SUPER+A About, SUPER+P / SUPER+SHIFT+P pomodoro, SUPER+U
-      pseudo.
+- [x] **Key bindings:** tried, all fine.
 - [ ] **Check autostart at next login:** Firefox on U (9), Discord on L (10)
       without stealing focus, OpenRGB colors, Steam notifications on DP-1
       (`xrandr --output DP-1 --primary`).
@@ -59,9 +56,25 @@ highlight), file-manager icon hook fixed, key bindings.
       (both machines). Wins over themes because the theme's `hyprland.lua`
       loads before `hypr.looknfeel`; the shell's corner radius follows the
       same option, so this replaces the old swayosd/walker/mako overrides.
-- [ ] **Test suspend/resume** once, including `openrgb-resume.service`.
-- [ ] **Wi-Fi:** only Ethernet is connected; re-add `Reef` in
-      NetworkManager if Wi-Fi is wanted (password in the USB backup).
+- [x] **Suspend/resume:** fine, and `openrgb-resume.service` re-applies the
+      colors. It's `WantedBy=sleep.target`, so it actually starts on the way
+      *into* sleep and only finishes after waking (its `sleep 5` is frozen
+      across the suspend). Works, but `suspend.target`-based ordering would be
+      the proper fix.
+- [ ] **OpenRGB ARGB strip (header 3) stuck on rainbow.** The 2026-11-01
+      update moved `openrgb-git` from 0.9 to 1.1.42 (AUR step of `omarchy
+      update`). Rolled back to 0.9 from `~/.cache/yay/openrgb-git/` and
+      pinned (`IgnorePkg = openrgb-git`, re-added after channel switches by
+      `desktop/omarchy/.../pre-refresh-pacman.d/pin-openrgb`). But 1.x wasn't
+      the cause: the GPU and the board's own LEDs respond on both versions,
+      while the strip ignores even the controller's hardware Static mode, so
+      the Aura controller's signal isn't reaching it. Next: full cold power
+      cycle (PSU off ~30s; the Aura controller and ARGB hubs keep standby
+      power across reboots), then BIOS lighting settings, Armoury Crate (if
+      Windows was booted), the cable/hub. If 0.9 turns out not to be needed,
+      drop the hook and the `IgnorePkg` line. Device indices didn't change
+      between versions (0 = GPU, 1 = X670E board), but zone names did
+      ("Aura Addressable 3" in 0.9, "Addressable RGB Header 3" in 1.x).
 - [x] **Cleanup:** removed `desktop/hypr/*.conf`, `desktop/waybar`,
       `desktop/environment-d/local-bin-path.conf`, the old screensaver
       scripts in `desktop/bin`, and `base/{walker,swayosd,waybar}` (e81f292),

@@ -1,0 +1,28 @@
+#!/bin/bash
+set -euo pipefail
+
+# Keep openrgb-git pinned (IgnorePkg) on this desktop.
+#
+# OpenRGB 1.x (openrgb-git 1.1.42, pulled in by the 2026-11-01 update) stops
+# driving the ASUS Aura USB controller (0b05:19af) here: colors sent to the
+# motherboard and ARGB strip are accepted but never shown, while the GPU still
+# works. 0.9 (0.9.1849.g880dc14, still in ~/.cache/yay/openrgb-git/) works.
+#
+# `omarchy refresh pacman` and channel switches overwrite /etc/pacman.conf
+# with a stock copy, which drops the pin. Omarchy runs this hook after that
+# rewrite and before the package transaction, so the pin is back in time.
+# Also safe to run by hand to add the pin the first time.
+
+conf=/etc/pacman.conf
+
+if grep -Eq '^[[:space:]]*IgnorePkg[[:space:]]*=.*(^|[[:space:]=])openrgb-git([[:space:]]|$)' "$conf"; then
+  exit 0
+fi
+
+if grep -Eq '^[[:space:]]*IgnorePkg[[:space:]]*=' "$conf"; then
+  sudo sed -i -E '0,/^[[:space:]]*IgnorePkg[[:space:]]*=/ s/^([[:space:]]*IgnorePkg[[:space:]]*=.*)$/\1 openrgb-git/' "$conf"
+else
+  sudo sed -i '/^\[options\]/a IgnorePkg = openrgb-git' "$conf"
+fi
+
+echo "Pinned openrgb-git in $conf (IgnorePkg)."
