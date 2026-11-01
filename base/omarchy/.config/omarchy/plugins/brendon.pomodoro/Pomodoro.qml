@@ -4,7 +4,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// Pomodoro bar module: the Quickshell port of the old waybar custom/pomodoro.
+// Pomodoro bar widget: the Quickshell port of the old waybar custom/pomodoro.
 //
 // Reads the state the ~/.local/bin pomodoro-* scripts (base/bin) keep in
 // $XDG_RUNTIME_DIR/omarchy-pomodoro/state: "<work|break> running <end epoch>"
@@ -12,14 +12,12 @@ import qs.Ui
 // Click starts/pauses/resumes (pomodoro-primary, also SUPER+P), right-click
 // stops (pomodoro-stop, also SUPER+SHIFT+P).
 //
-// Placed with a { "id": "pomodoro", "type": "qml" } entry in shell.json's
-// bar.layout. A user QML module, not a clone, so Omarchy updates don't touch it.
-Item {
+// An own plugin (brendon.pomodoro), not a clone of a stock one, so Omarchy
+// updates don't touch it. Enable and place it with `omarchy plugin enable
+// brendon.pomodoro` and `omarchy bar move brendon.pomodoro ...`.
+BarWidget {
   id: root
-
-  property var bar
-  property string moduleName
-  property var settings
+  moduleName: "brendon.pomodoro"
 
   readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")
@@ -35,10 +33,10 @@ Item {
   readonly property bool idle: phase === "" || remaining <= 0
   readonly property string timeText: Math.floor(remaining / 60) + ":" + String(remaining % 60).padStart(2, "0")
 
-  // Glyphs as codepoints, never pasted characters (see CLAUDE.md).
-  readonly property string idleGlyph: String.fromCodePoint(0xF254)
-  readonly property string workGlyph: String.fromCodePoint(0xF051F)
-  readonly property string breakGlyph: String.fromCodePoint(0xF0176)
+  // U+1F345 TOMATO, written as a codepoint rather than a pasted character
+  // (see CLAUDE.md). Drawn from Noto Color Emoji, so it stays tomato-red;
+  // the countdown text carries the phase color.
+  readonly property string tomato: String.fromCodePoint(0x1F345)
 
   // The theme's red and green, falling back to the old waybar colors.
   property color workColor: "#a55555"
@@ -101,7 +99,7 @@ Item {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.idle ? root.idleGlyph : (root.phase === "work" ? root.workGlyph : root.breakGlyph) + " " + root.timeText
+    text: root.idle ? root.tomato : root.tomato + " " + root.timeText
     foreground: root.idle ? (root.bar ? root.bar.barForeground : Color.foreground) : (root.phase === "work" ? root.workColor : root.breakColor)
     dimmed: root.idle || root.paused
     tooltipText: root.idle

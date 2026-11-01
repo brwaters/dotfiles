@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "brendon.pomodoro",
+  "name": "Pomodoro",
+  "version": "1.0.0",
+  "author": "brendon",
+  "description": "Pomodoro timer: tomato with a countdown; click to start or pause, right-click to stop",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Pomodoro.qml"
+  },
+  "barWidget": {
+    "displayName": "Pomodoro",
+    "description": "Pomodoro timer: tomato with a countdown; click to start or pause, right-click to stop",
+    "category": "Time",
+    "allowMultiple": false
+  }
+}

@@ -25,16 +25,18 @@ highlight), file-manager icon hook fixed, key bindings.
 - [ ] **Check autostart at next login:** Firefox on U (9), Discord on L (10)
       without stealing focus, OpenRGB colors, Steam notifications on DP-1
       (`xrandr --output DP-1 --primary`).
-- [x] **Pomodoro bar display:** `base/omarchy/.config/omarchy/bar/modules/pomodoro.qml`,
-      a user QML bar module (not a plugin clone, so updates don't touch it),
-      placed with `{ "id": "pomodoro", "type": "qml" }` after the workspaces
-      in `shell.json`'s `bar.layout.left`. Hourglass when idle, phase glyph +
-      `m:ss` in the theme's red (work) or green (break), dimmed when paused;
+- [x] **Pomodoro bar display:** own bar-widget plugin `brendon.pomodoro`
+      (`base/omarchy/.config/omarchy/plugins/brendon.pomodoro/`; not a clone,
+      so updates don't touch it), placed after the workspaces. Tomato
+      (U+1F345 from Noto Color Emoji) dimmed when idle; with `m:ss` in the
+      theme's red (work) or green (break) when running, dimmed when paused;
       click = start/pause, right-click = stop. Reads the scripts' state file
       directly (no process per second). Also fixed the scripts for 4.5's
       `omarchy-notification-send` (glyph now goes in `-g`; the old call
       errored out under `set -e`). For the laptop: stow `base/bin` and
-      `base/omarchy` (`--no-folding`) and add the layout entry.
+      `base/omarchy` (`--no-folding`), then `omarchy plugin enable
+      brendon.pomodoro` and `omarchy bar move brendon.pomodoro --after
+      recon.workspaces`.
 - [ ] **Stock app shortcuts left off** (`omarchy_preinstalled_bindings =
       false`): Herdr, Calculator, Omawrite are new since 3.8 and were never
       enabled; add any back in `desktop/hypr/bindings.lua` if wanted.
