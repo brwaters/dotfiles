@@ -7,8 +7,9 @@ dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/boo
 -- omarchy_default_bindings = false
 --
 -- Or disable only bindings for Omarchy's preinstalled apps/web apps while
--- keeping core window-manager bindings:
--- omarchy_preinstalled_bindings = false
+-- keeping core window-manager bindings. The ones still wanted are added back
+-- in hypr/bindings.lua.
+omarchy_preinstalled_bindings = false
 
 -- Load Omarchy defaults.
 require("default.hypr.omarchy")
@@ -30,6 +31,16 @@ require("default.hypr.toggles")
 
 -- Variable refresh rate on fullscreen apps only (games, video).
 hl.config({ misc = { vrr = 2 } })
+
+-- For the SUPER + BACKSPACE transparency toggle (hypr-window-transparency-toggle):
+-- blur behind windows whose opacity is changed at runtime. false sounds right
+-- but renders them flat see-through with no blur; some themes set it either
+-- way, so force it.
+hl.config({ decoration = { blur = { ignore_opacity = true } } })
+
+-- Terminals fully opaque by default, instead of stock's barely-visible
+-- 0.985/0.96, so the toggle is the only thing making them translucent.
+o.window({ tag = "terminal" }, { opacity = "1.0 1.0" })
 
 -- Discord: open on workspace 10 without switching your view there, and don't
 -- steal focus when it does. Single unconditional match on class only --

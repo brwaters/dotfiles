@@ -1,29 +1,32 @@
 #!/bin/bash
 set -euo pipefail
 
-# Replaces Omarchy's stock omarchy-hyprland-window-transparency-toggle,
-# which uses `setprop opaque toggle` - broken on Hyprland 0.53+ since the
-# default-opacity windowrule reasserts itself over that boolean almost
-# immediately, so the toggle has no visible effect. `setprop opacity
-# <value>` still works, so use that instead.
+# Toggle the focused window between fully opaque and translucent (with blur
+# behind it).
 #
-# Hyprland doesn't expose current forced opacity via `hyprctl activewindow
-# -j`, so state is tracked here by window address instead.
+# Stock's omarchy-hyprland-window-transparency-toggle only flips the "opaque"
+# prop, which drops a window back to its default opacity - 0.985 for
+# terminals, so the toggle barely shows. Set the opacity directly instead.
+#
+# Pairs with the window rule that makes terminals fully opaque by default and
+# blur.ignore_opacity = true (hyprland.lua), without which a runtime opacity
+# change renders flat see-through with no blur.
 TRANSLUCENT_OPACITY=0.65
 
-state_file="${XDG_RUNTIME_DIR:-/tmp}/hypr-transparency-toggled"
-touch "$state_file"
+addr=$(hyprctl activewindow -j | jq -r '.address // empty')
+[[ -n $addr ]] || exit 0
+window="address:$addr"
 
-addr=$(hyprctl activewindow -j | jq -r '.address')
+set_opacity() {
+  for prop in opacity opacity_inactive; do
+    hyprctl dispatch "hl.dsp.window.set_prop({ window = \"$window\", prop = \"$prop\", value = \"$1\" })" >/dev/null
+  done
+}
 
-if grep -qxF "$addr" "$state_file"; then
-  hyprctl dispatch setprop "address:$addr" opacity 1.0 >/dev/null
-  # grep -v exits 1 when nothing remains after filtering (e.g. this was the
-  # only entry) - under set -e that would abort before the mv, leaving the
-  # stale address in the state file forever. The `|| true` keeps it going.
-  grep -vxF "$addr" "$state_file" >"$state_file.tmp" || true
-  mv "$state_file.tmp" "$state_file"
+# Anything below 1 counts as translucent, so a window at a theme's default
+# below-1 opacity goes opaque first.
+if awk -v o="$(hyprctl getprop "$window" opacity)" 'BEGIN { exit !(o < 1) }'; then
+  set_opacity 1.0
 else
-  hyprctl dispatch setprop "address:$addr" opacity "$TRANSLUCENT_OPACITY" >/dev/null
-  echo "$addr" >>"$state_file"
+  set_opacity "$TRANSLUCENT_OPACITY"
 fi
