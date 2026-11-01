@@ -30,8 +30,12 @@ highlight), file-manager icon hook fixed, key bindings.
 - [ ] **Stock app shortcuts left off** (`omarchy_preinstalled_bindings =
       false`): Herdr, Calculator, Omawrite are new since 3.8 and were never
       enabled; add any back in `desktop/hypr/bindings.lua` if wanted.
-- [ ] **Notifications on DP-1:** clone `omarchy.notifications`, prefer DP-1
-      over the focused monitor (replaces the retired mako hook).
+- [x] **Notifications on DP-1:** `brendon.notifications` clone prefers DP-1
+      over the focused monitor (replaces the retired mako hook). Re-clone at
+      each release. Gotcha: after swapping a *service* plugin for a clone,
+      check `pgrep -x quickshell` changes on `omarchy restart shell`; a
+      reload leaves the stock service owning the `notifications` IPC and
+      D-Bus names, so the clone looks enabled but does nothing.
 - [ ] **Idle and lock:** old timings were screensaver 450s, lock 901s, DPMS
       off 930s; lock screen on DP-1. Port the screensaver fork (waves on
       DP-1, black on the side monitors).
