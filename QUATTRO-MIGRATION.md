@@ -74,8 +74,11 @@ highlight), file-manager icon hook fixed, key bindings.
       `recon.idle`), and a global-workspaces mode (`*.workspaces`,
       `workspaces.lua`). Draft them for the user to post; add to "Upstream
       issues filed".
-- [ ] **`system-backups/README.md`:** add the desktop section (OpenRGB/QMK
-      files, `i2c`/`input` groups, enable `openrgb-resume.service`).
+- [x] **`system-backups/README.md`:** desktop section added. Only
+      `openrgb-resume.service`, `50-qmk.rules` and the swappiness line are
+      still needed; the OpenRGB hidraw/i2c rules and `i2c-dev.conf` are
+      covered by packaged rules (`uaccess`) now. Quattro removed the user
+      from `input` and `docker` on purpose (security); nothing here needs them.
 - [ ] **Update this guide:** Quattro is on stable now (the "use RC" advice is
       outdated; 3.8.4's `master` has no upgrade path, `omarchy-branch-set rc`
       provides it), Secure Boot notes, and the new gotchas (`--no-folding`
