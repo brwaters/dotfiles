@@ -8,14 +8,49 @@ use it to move faster when the desktop's turn comes.
 - Laptop (`axiom`, T2 MacBook): migrated 2026-08-13, RC channel, `4.0.0rc4-1`;
   updated to `4.5.0rc1-1` on 2026-10-25 and plugin clones re-cloned against it
   (see "4.5 update" below)
-- Desktop: not yet migrated. Plan: the desktop adapts itself from the
-  `laptop/` packages as the reference, rather than restructuring `laptop/`
-  into `base/` first. The Nautilus-script blocker (next section) is most
-  likely resolved: confirm `pin-file-manager-icons` is the script.
-- **Don't `git pull` on the desktop before migrating it.** `main` has deleted
-  pre-Quattro files the desktop still uses live (`base/hypr/bindings.conf`,
-  `looknfeel.conf`, `base/alacritty`, etc.). Pulling first would leave
-  dangling stow symlinks on a 3.8.x system. Migrate, then pull.
+- Desktop (`void`): migrated 2026-11-01. 3.8.4 → stable `4.0.6-1` → RC
+  `4.5.0rc2-1` (to match the laptop). Secure Boot (own sbctl keys + Microsoft)
+  survived untouched. Config port in progress; see "Desktop to-do" below.
+
+## Desktop to-do
+
+Done so far: Hyprland Lua port (monitors, global workspaces, window rules,
+autostart, input), `recon.workspaces` widget (U/L labels, per-monitor
+highlight), file-manager icon hook fixed, key bindings.
+
+- [ ] **Try the new key bindings** (not pressed yet, only checked in the
+      bindings list): SUPER+SHIFT+A/C/E/Y Firefox web apps, SUPER+SHIFT+S
+      screenshot, SUPER+A About, SUPER+P / SUPER+SHIFT+P pomodoro, SUPER+U
+      pseudo.
+- [ ] **Check autostart at next login:** Firefox on U (9), Discord on L (10)
+      without stealing focus, OpenRGB colors, Steam notifications on DP-1
+      (`xrandr --output DP-1 --primary`).
+- [ ] **Pomodoro bar display:** the timer and notifications work, but the
+      countdown lived in a waybar module. Needs a Quickshell bar widget.
+- [ ] **Stock app shortcuts left off** (`omarchy_preinstalled_bindings =
+      false`): Herdr, Calculator, Omawrite are new since 3.8 and were never
+      enabled; add any back in `desktop/hypr/bindings.lua` if wanted.
+- [ ] **Notifications on DP-1:** clone `omarchy.notifications`, prefer DP-1
+      over the focused monitor (replaces the retired mako hook).
+- [ ] **Idle and lock:** old timings were screensaver 450s, lock 901s, DPMS
+      off 930s; lock screen on DP-1. Port the screensaver fork (waves on
+      DP-1, black on the side monitors).
+- [ ] **Square corners** (`rounding = 0`): shared with the laptop, so it
+      belongs in `base/hypr/looknfeel.lua`. Ask before changing.
+- [ ] **Test suspend/resume** once, including `openrgb-resume.service`.
+- [ ] **Wi-Fi:** only Ethernet is connected; re-add `Reef` in
+      NetworkManager if Wi-Fi is wanted (password in the USB backup).
+- [ ] **Cleanup:** delete `desktop/hypr/*.conf`, `desktop/waybar`,
+      `desktop/environment-d/local-bin-path.conf`, the old screensaver
+      scripts in `desktop/bin`, and `base/{walker,swayosd,waybar}`; drop the
+      `git stash` of the upgrade's dead path edits.
+- [ ] **`system-backups/README.md`:** add the desktop section (OpenRGB/QMK
+      files, `i2c`/`input` groups, enable `openrgb-resume.service`).
+- [ ] **Update this guide:** Quattro is on stable now (the "use RC" advice is
+      outdated; 3.8.4's `master` has no upgrade path, `omarchy-branch-set rc`
+      provides it), Secure Boot notes, and the new gotchas (`--no-folding`
+      for `desktop/omarchy`, stowed plugin edits need `omarchy restart
+      shell`, theme state moved to `~/.local/state/omarchy/current`).
 
 ---
 
