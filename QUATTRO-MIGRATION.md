@@ -57,10 +57,23 @@ highlight), file-manager icon hook fixed, key bindings.
 - [ ] **Test suspend/resume** once, including `openrgb-resume.service`.
 - [ ] **Wi-Fi:** only Ethernet is connected; re-add `Reef` in
       NetworkManager if Wi-Fi is wanted (password in the USB backup).
-- [ ] **Cleanup:** delete `desktop/hypr/*.conf`, `desktop/waybar`,
+- [x] **Cleanup:** removed `desktop/hypr/*.conf`, `desktop/waybar`,
       `desktop/environment-d/local-bin-path.conf`, the old screensaver
-      scripts in `desktop/bin`, and `base/{walker,swayosd,waybar}`; drop the
-      `git stash` of the upgrade's dead path edits.
+      scripts in `desktop/bin`, and `base/{walker,swayosd,waybar}` (e81f292),
+      plus the stow links inside Omarchy's `*.omarchy-upgrade-to-quattro.*.bak`
+      backups. Still to do: `git stash drop` the upgrade's dead path edits
+      (needs the user's go-ahead; it's irreversible).
+- [ ] **Patch-based plugin clones:** keep each clone's edit as a `.patch`
+      plus a `reclone` script (`omarchy plugin clone` → apply patch → move
+      into the stow package), so re-syncing after an Omarchy release is one
+      command and a failed patch flags that stock changed where it matters.
+      Covers both machines' clones.
+- [ ] **Upstream requests** that would retire clones entirely: a
+      notifications output setting (`brendon.notifications`), a configurable
+      screensaver command for the idle service (`brendon.idle`,
+      `recon.idle`), and a global-workspaces mode (`*.workspaces`,
+      `workspaces.lua`). Draft them for the user to post; add to "Upstream
+      issues filed".
 - [ ] **`system-backups/README.md`:** add the desktop section (OpenRGB/QMK
       files, `i2c`/`input` groups, enable `openrgb-resume.service`).
 - [ ] **Update this guide:** Quattro is on stable now (the "use RC" advice is
