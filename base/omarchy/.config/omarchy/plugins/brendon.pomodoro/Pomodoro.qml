@@ -33,10 +33,13 @@ BarWidget {
   readonly property bool idle: phase === "" || remaining <= 0
   readonly property string timeText: Math.floor(remaining / 60) + ":" + String(remaining % 60).padStart(2, "0")
 
-  // U+1F345 TOMATO, written as a codepoint rather than a pasted character
-  // (see CLAUDE.md). Drawn from Noto Color Emoji, so it stays tomato-red;
-  // the countdown text carries the phase color.
-  readonly property string tomato: String.fromCodePoint(0x1F345)
+  // The old waybar module's Nerd Font glyphs, plus a sideways hourglass for
+  // paused. Written as codepoints, never pasted characters (see CLAUDE.md).
+  readonly property string idleGlyph: String.fromCodePoint(0xF254)    // fa-hourglass
+  readonly property string workGlyph: String.fromCodePoint(0xF051F)   // md-timer_sand
+  readonly property string breakGlyph: String.fromCodePoint(0xF0176)  // md-coffee
+  readonly property string pausedGlyph: String.fromCodePoint(0xF19A0) // md-timer_sand_paused
+  readonly property string glyph: idle ? idleGlyph : (paused ? pausedGlyph : (phase === "work" ? workGlyph : breakGlyph))
 
   // The theme's red and green, falling back to the old waybar colors.
   property color workColor: "#a55555"
@@ -99,7 +102,7 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.idle ? root.tomato : root.tomato + " " + root.timeText
+    text: root.idle ? root.glyph : root.glyph + " " + root.timeText
     foreground: root.idle ? (root.bar ? root.bar.barForeground : Color.foreground) : (root.phase === "work" ? root.workColor : root.breakColor)
     dimmed: root.idle || root.paused
     tooltipText: root.idle

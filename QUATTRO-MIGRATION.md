@@ -27,9 +27,12 @@ highlight), file-manager icon hook fixed, key bindings.
       (`xrandr --output DP-1 --primary`).
 - [x] **Pomodoro bar display:** own bar-widget plugin `brendon.pomodoro`
       (`base/omarchy/.config/omarchy/plugins/brendon.pomodoro/`; not a clone,
-      so updates don't touch it), placed after the workspaces. Tomato
-      (U+1F345 from Noto Color Emoji) dimmed when idle; with `m:ss` in the
-      theme's red (work) or green (break) when running, dimmed when paused;
+      so updates don't touch it), placed after the workspaces. The old
+      waybar glyphs: hourglass when idle, timer-sand (work) or coffee mug
+      (break) with `m:ss` in the theme's red/green when running, sideways
+      hourglass dimmed when paused. (A colour-emoji tomato clashed with the
+      line glyphs; no installed font has a monochrome one, though AUR
+      `ttf-noto-emoji-monochrome` does.)
       click = start/pause, right-click = stop. Reads the scripts' state file
       directly (no process per second). Also fixed the scripts for 4.5's
       `omarchy-notification-send` (glyph now goes in `-g`; the old call
