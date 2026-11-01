@@ -12,7 +12,7 @@ if [[ ! -f $state_file ]]; then
   echo "work running $end_epoch" >"$state_file"
   systemd-run --user --quiet --collect --on-active="${work_minutes}m" --unit=omarchy-pomodoro-work \
     pomodoro-advance work
-  omarchy-notification-send "🍅" "Pomodoro started" "${work_minutes} minute work session" -u low
+  omarchy-notification-send -g "🍅" -u low "Pomodoro started" "${work_minutes} minute work session"
 else
   read -r phase status value <"$state_file"
   if [[ $status == running ]]; then
@@ -20,15 +20,14 @@ else
     if ((remaining > 0)); then
       systemctl --user stop "omarchy-pomodoro-${phase}.timer" "omarchy-pomodoro-${phase}.service" 2>/dev/null || true
       echo "$phase paused $remaining" >"$state_file"
-      omarchy-notification-send "🍅" "Pomodoro paused" -u low
+      omarchy-notification-send -g "🍅" -u low "Pomodoro paused"
     fi
   else
     end_epoch=$(($(date +%s) + value))
     echo "$phase running $end_epoch" >"$state_file"
     systemd-run --user --quiet --collect --on-active="${value}s" --unit="omarchy-pomodoro-${phase}" \
       pomodoro-advance "$phase"
-    omarchy-notification-send "🍅" "Pomodoro resumed" -u low
+    omarchy-notification-send -g "🍅" -u low "Pomodoro resumed"
   fi
 fi
 
-pkill -RTMIN+12 waybar 2>/dev/null || true

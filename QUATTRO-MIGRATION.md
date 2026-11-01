@@ -25,8 +25,16 @@ highlight), file-manager icon hook fixed, key bindings.
 - [ ] **Check autostart at next login:** Firefox on U (9), Discord on L (10)
       without stealing focus, OpenRGB colors, Steam notifications on DP-1
       (`xrandr --output DP-1 --primary`).
-- [ ] **Pomodoro bar display:** the timer and notifications work, but the
-      countdown lived in a waybar module. Needs a Quickshell bar widget.
+- [x] **Pomodoro bar display:** `base/omarchy/.config/omarchy/bar/modules/pomodoro.qml`,
+      a user QML bar module (not a plugin clone, so updates don't touch it),
+      placed with `{ "id": "pomodoro", "type": "qml" }` after the workspaces
+      in `shell.json`'s `bar.layout.left`. Hourglass when idle, phase glyph +
+      `m:ss` in the theme's red (work) or green (break), dimmed when paused;
+      click = start/pause, right-click = stop. Reads the scripts' state file
+      directly (no process per second). Also fixed the scripts for 4.5's
+      `omarchy-notification-send` (glyph now goes in `-g`; the old call
+      errored out under `set -e`). For the laptop: stow `base/bin` and
+      `base/omarchy` (`--no-folding`) and add the layout entry.
 - [ ] **Stock app shortcuts left off** (`omarchy_preinstalled_bindings =
       false`): Herdr, Calculator, Omawrite are new since 3.8 and were never
       enabled; add any back in `desktop/hypr/bindings.lua` if wanted.
@@ -71,7 +79,16 @@ highlight), file-manager icon hook fixed, key bindings.
       the Aura controller's signal isn't reaching it. Next: full cold power
       cycle (PSU off ~30s; the Aura controller and ARGB hubs keep standby
       power across reboots), then BIOS lighting settings, Armoury Crate (if
-      Windows was booted), the cable/hub. If 0.9 turns out not to be needed,
+      Windows was booted), the cable/hub. Ruled out: header numbering (all
+      three ARGB zones sized to 90 and painted, strip still rainbow), access
+      (hidraw and raw USB nodes writable via `uaccess`), the kernel (same USB
+      enumeration as before). The user confirmed the strip worked on 0.9 at
+      boot that morning, before the update, and sees the same version split
+      on Windows (0.9 and 1.x each drive a different subset of this
+      hardware), so the likeliest cause is OpenRGB 1.x rewriting the Aura
+      controller's stored ARGB configuration, which survives reboots on
+      standby power. Don't run 1.x on Windows either until it's sorted.
+      If 0.9 turns out not to be needed,
       drop the hook and the `IgnorePkg` line. Device indices didn't change
       between versions (0 = GPU, 1 = X670E board), but zone names did
       ("Aura Addressable 3" in 0.9, "Addressable RGB Header 3" in 1.x).
