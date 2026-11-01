@@ -1,0 +1,14 @@
+[Unit]
+Description=Set OpenRGB colors after resume
+After=sleep.target
+
+[Service]
+Type=oneshot
+User=brendon
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+ExecStartPre=/bin/sleep 5
+ExecStart=/home/brendon/.local/bin/personal_openrgb_set_colors
+
+[Install]
+WantedBy=sleep.target
