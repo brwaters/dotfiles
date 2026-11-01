@@ -11,18 +11,24 @@ BarWidget {
   moduleName: "omarchy.workspaces"
 
   // Global workspaces, not 4.5's per-monitor blocks (1-10, 11-20, ...): every
-  // bar shows the same 1-10 and marks the focused one, whichever monitor it's
-  // on. Pairs with hypr/workspaces.lua, which turns the blocks off on the
-  // Hyprland side. Otherwise kept close to stock 4.5 (layout glyph on the
-  // focused workspace, click it to cycle layout, smooth wheel scrolling).
+  // bar shows the same 1-10. Pairs with hypr/workspaces.lua, which turns the
+  // blocks off on the Hyprland side. Otherwise kept close to stock 4.5 (layout
+  // glyph on the marked workspace, click it to cycle layout, smooth wheel
+  // scrolling).
+  //
+  // Desktop: unlike the laptop's copy, each bar marks the workspace its own
+  // monitor is showing, as stock does, rather than the focused one. With a bar
+  // on all three monitors, the side bars then mark U and L.
   readonly property var monitor: {
     var window = root.QsWindow.window
     var screen = window ? window.screen : null
     return screen ? Hyprland.monitorFor(screen) : Hyprland.focusedMonitor
   }
 
+  readonly property string monitorName: root.monitor ? root.monitor.name : ""
+
   function activeWorkspaceId() {
-    return Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
+    return root.monitor && root.monitor.activeWorkspace ? root.monitor.activeWorkspace.id : -1
   }
 
   function workspaceById(id) {
@@ -114,17 +120,28 @@ BarWidget {
     readMode()
   }
 
-  // The layout commands act on the focused workspace, which is the one marked
-  // on every bar, so no monitor hop is needed first.
+  // The layout commands act on the focused workspace, so a click on another
+  // monitor's bar focuses that monitor first.
   function cycleLayout() {
-    if (root.bar) root.bar.run("omarchy-hyprland-workspace-layout-toggle")
+    if (!root.bar) return
+    var command = "omarchy-hyprland-workspace-layout-toggle"
+    if (root.monitor && !root.monitor.focused) {
+      command = "hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ monitor = \"" + root.monitorName + "\" })") + " >/dev/null && " + command
+    }
+    root.bar.run(command)
   }
 
   Component.onCompleted: refresh()
 
+  onMonitorChanged: root.showActiveMode()
+
+  Connections {
+    target: root.monitor
+    function onActiveWorkspaceChanged() { root.showActiveMode() }
+  }
+
   Connections {
     target: Hyprland
-    function onFocusedWorkspaceChanged() { root.showActiveMode() }
     function onRawEvent(event) {
       var name = event ? String(event.name) : ""
       if (name === "configreloaded") root.refresh()
