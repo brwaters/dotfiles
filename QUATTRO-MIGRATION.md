@@ -36,9 +36,22 @@ highlight), file-manager icon hook fixed, key bindings.
       check `pgrep -x quickshell` changes on `omarchy restart shell`; a
       reload leaves the stock service owning the `notifications` IPC and
       D-Bus names, so the clone looks enabled but does nothing.
-- [ ] **Idle and lock:** old timings were screensaver 450s, lock 901s, DPMS
-      off 930s; lock screen on DP-1. Port the screensaver fork (waves on
-      DP-1, black on the side monitors).
+- [x] **Idle and lock:** `idle.screensaver = 450`, `idle.lock = 901` in
+      `~/.config/omarchy/shell.json` (untracked; the shell rewrites it, so
+      re-set these on a reinstall). Screens and keyboard backlight go off 5s
+      after the lock engages (lock plugin), replacing the old 930s DPMS step.
+      Screensaver: `brendon.idle` clone calls `brendon-launch-screensaver`
+      (`desktop/bin`): waves on DP-1, black on the side monitors, exits on
+      key press or mouse movement.
+      Not ported: the old hyprlock showed the password field and wallpaper
+      only on DP-1; the Quickshell lock draws both on every monitor, with no
+      setting for it (would need a clone of the security-critical lock
+      plugin).
+      Gotchas: idle timeouts in `shell.json` only apply after `omarchy
+      restart shell`. When testing, never put the literal
+      `org.omarchy.screensaver` in your own command line: the launcher's
+      `pgrep -f` "already running" check matches your shell and silently
+      exits, and a `pkill -f` cleanup kills your shell.
 - [ ] **Square corners** (`rounding = 0`): shared with the laptop, so it
       belongs in `base/hypr/looknfeel.lua`. Ask before changing.
 - [ ] **Test suspend/resume** once, including `openrgb-resume.service`.
