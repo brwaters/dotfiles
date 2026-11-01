@@ -52,8 +52,10 @@ highlight), file-manager icon hook fixed, key bindings.
       `org.omarchy.screensaver` in your own command line: the launcher's
       `pgrep -f` "already running" check matches your shell and silently
       exits, and a `pkill -f` cleanup kills your shell.
-- [ ] **Square corners** (`rounding = 0`): shared with the laptop, so it
-      belongs in `base/hypr/looknfeel.lua`. Ask before changing.
+- [x] **Square corners:** `rounding = 0` in `base/hypr/looknfeel.lua`
+      (both machines). Wins over themes because the theme's `hyprland.lua`
+      loads before `hypr.looknfeel`; the shell's corner radius follows the
+      same option, so this replaces the old swayosd/walker/mako overrides.
 - [ ] **Test suspend/resume** once, including `openrgb-resume.service`.
 - [ ] **Wi-Fi:** only Ethernet is connected; re-add `Reef` in
       NetworkManager if Wi-Fi is wanted (password in the USB backup).
