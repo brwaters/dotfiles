@@ -93,6 +93,24 @@ highlight), file-manager icon hook fixed, key bindings.
       hardware), so the likeliest cause is OpenRGB 1.x rewriting the Aura
       controller's stored ARGB configuration, which survives reboots on
       standby power. Don't run 1.x on Windows either until it's sorted.
+      **Parked 2026-11-01 (second pass), to pick up another time.** The
+      installed build (`0.9.1849.g880dc14`) is the exact one that worked
+      that morning; its startup logs from 10:33 (working) and 15:49 (broken)
+      detect the same devices. The SDK server confirms header 3 is set to
+      90 blue LEDs in Direct mode. The controller (firmware
+      `AULA3-AR32-0309`, `0b05:19af`, `/dev/hidraw5`) answers commands, and
+      its config table (`0xEC 0xB0`) reports 3 ARGB channels of up to 120
+      LEDs. Nothing looks corrupt, but there's no earlier dump to compare
+      against. Nothing else holds the device. The only remaining software
+      difference from the morning is the kernel: Arch `linux 7.2.11` →
+      `linux-omarchy 7.2.8` (same ASUS modules load on both). Not the GPU:
+      the 5070 Ti registers under its own name and responds; `Main.orp`
+      still names the 3070 Ti, which the profile loader just skips (re-save
+      it sometime). To do, in order: (1) boot the `7.2.11-arch1-1` Limine
+      entry. If the strip goes blue, pin that kernel. (2) Power off at the
+      PSU for at least 30s (not done yet; the last "reboot" had about a
+      minute between shutdown and boot). (3) Look for an ARGB hub or a
+      case LED button in its own effects mode; reseat the header 3 cable.
       If 0.9 turns out not to be needed,
       drop the hook and the `IgnorePkg` line. Device indices didn't change
       between versions (0 = GPU, 1 = X670E board), but zone names did
