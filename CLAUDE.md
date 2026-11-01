@@ -2,12 +2,13 @@
 
 ## Omarchy Quattro migration (read first)
 
-The laptop runs Omarchy Quattro (4.x); the desktop is still on 3.8.x until it
-migrates. Before any Quattro-related work, and **before upgrading or
-configuring the desktop**, read `QUATTRO-MIGRATION.md`. Its "Desktop runbook"
-section is the step-by-step plan for the desktop, and the rest of the guide
-explains the gotchas behind each step. Don't `git pull` on the desktop until
-it has been upgraded to Quattro.
+Both machines run Omarchy Quattro (4.x): the laptop since 2026-08-13, the
+desktop since 2026-11-01. Before changing Hyprland, shell plugins or
+anything else Omarchy-related, or before an Omarchy upgrade, read
+`QUATTRO-MIGRATION.md`. Its "Desktop to-do" lists the open items, and
+"Known regressions" lists the gotchas that have already cost time (theme
+state path, stow folding, shell restarts, plugin clones, Secure Boot on the
+desktop).
 
 ## Repo structure
 
@@ -17,15 +18,15 @@ Three top-level stow roots:
 - `desktop/` — overrides/additions specific to the desktop
 - `laptop/` — overrides/additions specific to the laptop
 
-Each root contains stow packages (e.g. `base/waybar`, `desktop/waybar`). Inside each package the directory tree mirrors `$HOME`, so `base/waybar/.config/waybar/config.jsonc` stows to `~/.config/waybar/config.jsonc`.
+Each root contains stow packages (e.g. `base/hypr`, `desktop/hypr`). Inside each package the directory tree mirrors `$HOME`, so `base/hypr/.config/hypr/looknfeel.lua` stows to `~/.config/hypr/looknfeel.lua`.
 
 ## Where new config belongs
 
 **Always prefer `base/` for changes that should exist on both machines.**
 
-Only put a change in `desktop/` or `laptop/` (or duplicate it into both) when the application doesn't support layered/merged config from multiple sources. For example, waybar loads a single `config.jsonc`, so there's no way to have a `base/` file that both machines extend — it must live in each machine's package.
+Only put a change in `desktop/` or `laptop/` (or duplicate it into both) when the application doesn't support layered/merged config from multiple sources. For example, an Omarchy shell plugin clone is a whole plugin directory that can't be layered, so the workspaces widget lives in both `desktop/omarchy` and `laptop/omarchy`.
 
-If an app *does* support includes or imports (e.g. hyprland `source =`), keep shared config in `base/` and only put machine-specific overrides in the machine directory.
+If an app *does* support includes or imports (e.g. Hyprland's Lua `require`), keep shared config in `base/` and only put machine-specific overrides in the machine directory.
 
 ## Adding a new file to the dotfiles
 
@@ -53,10 +54,10 @@ All stow commands should be run from inside the root that contains the package (
 
 ```bash
 cd ~/.dotfiles/base
-stow -t ~ waybar          # initial stow
-stow -t ~ -R waybar       # restow (refresh symlinks after adding files)
-stow -t ~ -D waybar       # unstow (remove symlinks)
-stow -t ~ -nv -R waybar   # dry-run with verbose output
+stow -t ~ hypr          # initial stow
+stow -t ~ -R hypr       # restow (refresh symlinks after adding files)
+stow -t ~ -D hypr       # unstow (remove symlinks)
+stow -t ~ -nv -R hypr   # dry-run with verbose output
 ```
 
 **Always pass `-t ~` (or `--target=~`) explicitly.** Stow's default target is the parent of the stow directory — when you `cd ~/.dotfiles/base` first, that parent is `~/.dotfiles`, not `$HOME`. Omitting `-t ~` silently creates stray symlinks inside the repo itself (e.g. `~/.dotfiles/.config/...`) instead of stowing into your home directory.
@@ -67,12 +68,12 @@ Waybar (and other) configs embed Nerd Font icon glyphs — Private Use Area Unic
 
 Rules:
 - Never retype or hand-compose a glyph. When editing a line that contains one, keep `old_string`/`new_string` scoped so the glyph itself is copied verbatim from the Read output, not reproduced from memory.
-- If a glyph must actually change, verify after editing — e.g. `grep -c` for the expected codepoint, or reload waybar and visually confirm the icon still renders — rather than assuming the edit was byte-exact.
+- If a glyph must actually change, verify after editing — e.g. `grep -c` for the expected codepoint, or reload the app and visually confirm the icon still renders — rather than assuming the edit was byte-exact.
 
 ## Checking symlink status
 
 ```bash
-ls -la ~/.config/waybar/   # look for -> symlinks pointing into ~/.dotfiles
+ls -la ~/.config/hypr/   # look for -> symlinks pointing into ~/.dotfiles
 ```
 
 If a file is a regular file instead of a symlink, it hasn't been moved into the stow package yet and won't be updated when pulling changes on another machine.

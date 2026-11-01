@@ -1,16 +1,19 @@
 # Omarchy Quattro Migration Guide
 
-Working notes from migrating the laptop (T2 MacBook, host `axiom`) from Omarchy
-3.8.x to Quattro (4.0.0, RC channel). Keep this updated as work continues, and
-use it to move faster when the desktop's turn comes.
+Working notes from migrating both machines from Omarchy 3.8.x to Quattro
+(4.x): the laptop (T2 MacBook, host `axiom`) first, then the desktop (host
+`void`). Keep this updated as work continues; the next Omarchy release or a
+reinstall will hit the same gotchas.
 
 **Status:**
 - Laptop (`axiom`, T2 MacBook): migrated 2026-08-13, RC channel, `4.0.0rc4-1`;
   updated to `4.5.0rc1-1` on 2026-10-25 and plugin clones re-cloned against it
-  (see "4.5 update" below)
-- Desktop (`void`): migrated 2026-11-01. 3.8.4 → stable `4.0.6-1` → RC
-  `4.5.0rc2-1` (to match the laptop). Secure Boot (own sbctl keys + Microsoft)
-  survived untouched. Config port in progress; see "Desktop to-do" below.
+  (see "4.5 update" below). Stays on RC until stable reaches 4.5 (switching
+  to stable earlier would downgrade it).
+- Desktop (`void`): migrated 2026-11-01. 3.8.4 → stable `4.0.6-1` (see
+  "Upgrade from 3.8.4 on the stable channel") → RC `4.5.0rc2-1` to match the
+  laptop. Secure Boot (own sbctl keys + Microsoft) survived untouched (see
+  "Secure Boot"). Config port done apart from the to-do items below.
 
 ## Desktop to-do
 
@@ -63,8 +66,7 @@ highlight), file-manager icon hook fixed, key bindings.
       `desktop/environment-d/local-bin-path.conf`, the old screensaver
       scripts in `desktop/bin`, and `base/{walker,swayosd,waybar}` (e81f292),
       plus the stow links inside Omarchy's `*.omarchy-upgrade-to-quattro.*.bak`
-      backups. Still to do: `git stash drop` the upgrade's dead path edits
-      (needs the user's go-ahead; it's irreversible).
+      backups. Dropped the `git stash` of the upgrade's dead path edits.
 - [ ] **Patch-based plugin clones:** keep each clone's edit as a `.patch`
       plus a `reclone` script (`omarchy plugin clone` → apply patch → move
       into the stow package), so re-syncing after an Omarchy release is one
@@ -81,173 +83,74 @@ highlight), file-manager icon hook fixed, key bindings.
       still needed; the OpenRGB hidraw/i2c rules and `i2c-dev.conf` are
       covered by packaged rules (`uaccess`) now. Quattro removed the user
       from `input` and `docker` on purpose (security); nothing here needs them.
-- [ ] **Update this guide:** Quattro is on stable now (the "use RC" advice is
-      outdated; 3.8.4's `master` has no upgrade path, `omarchy-branch-set rc`
-      provides it), Secure Boot notes, and the new gotchas (`--no-folding`
-      for `desktop/omarchy`, stowed plugin edits need `omarchy restart
-      shell`, theme state moved to `~/.local/state/omarchy/current`).
-
+- [x] **Update this guide** with the desktop migration: stable-channel
+      upgrade path, Secure Boot, and the new gotchas (see "Known
+      regressions").
 ---
 
-## Desktop runbook (start here if you're the agent on the desktop)
+## Desktop runbook (completed 2026-11-01)
 
-The laptop is the reference implementation. Copy its *patterns* from
-`laptop/`, but don't modify `laptop/` itself; desktop changes go in
-`desktop/` (or `base/` only for something genuinely identical on both
-machines). The rest of this guide explains the *why* behind each step;
-read the referenced sections before acting.
+Kept as a record of what the desktop needed, and where it differs from the
+laptop. Desktop changes live in `desktop/`, shared ones in `base/`.
 
-**Desktop facts:** user `brendon` (laptop is `recon`, so a fresh
-`omarchy plugin clone` here makes `brendon.*` ids; copying the laptop's
-`recon.*` folders also works, since the id lives in `manifest.json`).
-NVIDIA GPU. Three monitors: `DP-1` 2560x1440@165 primary at `0x0`,
-`HDMI-A-1` 1920x1080@144 at `-1920x-360`, `HDMI-A-2` 1920x1080@144 at
-`-1920x720`, all scale 1. Old config: `desktop/hypr/.config/hypr/*.conf`
-(still the source of truth for what to port; delete them only after
-porting).
+**Desktop facts:** user `brendon` (laptop is `recon`, so a fresh `omarchy
+plugin clone` here makes `brendon.*` ids; the copied `recon.workspaces`
+keeps its id, which lives in `manifest.json`). NVIDIA RTX 5070 Ti (driver
+via `nvidia-open-dkms`; built for both `linux` and `linux-omarchy`). Three
+monitors: `DP-1` 2560x1440@165 primary at `0x0`, `DP-2` 1920x1080@144 at
+`-1920x-360` (was `HDMI-A-1` until the cable changed), `HDMI-A-2`
+1920x1080@144 at `-1920x720`, all scale 1.
 
-**Before upgrading (on 3.8.x):**
-1. Confirm `desktop/omarchy/.config/omarchy/hooks/theme-set.d/pin-file-manager-icons`
-   is the "Nautilus accent-color icon script" (see next section). If
-   something else exists on disk that isn't in the repo, commit it first.
-2. Do the "Before you start" checklist: `pacman.conf` custom entries /
-   `IgnorePkg`, back up `/var/lib/iwd/`. Decide whether this machine uses
-   suspend (see the T2 section's note; desktop may differ).
-3. Do **not** `git pull` yet (see Status).
+**Before upgrading (done on 3.8.4):** committed untracked state (OpenRGB
+config → `desktop/openrgb`, root-owned files → `system-backups/`), backed up
+`/var/lib/sbctl` and `/var/lib/iwd` to an encrypted USB archive, took a
+manual snapper snapshot with no cleanup policy (the channel switch upgrades
+packages before anything else snapshots), didn't `git pull`.
 
-**Upgrade:** follow "Upgrade sequence that actually worked". Never point a
-Quattro system at `stable` while stable is still 3.8.x.
+**After upgrading:** rebased the local commits onto `origin/main` (the
+3.8-only mako-hook fix `61ff6d3` was dropped), then:
 
-**After the second reboot:**
-1. `git pull`. Quattro seeds `~/.config/hypr/*.lua` as plain files: move
-   each into `desktop/hypr/.config/hypr/` and restow (CLAUDE.md "Adding a
-   new file"), then edit them there.
-2. Port the old desktop `.conf` files into those Lua files, verifying syntax
-   against `/usr/share/omarchy/default/hypr/*.lua` (see "Dotfiles
-   restructuring approach"; don't trust remembered syntax):
-   - `monitors.conf` → `monitors.lua`: the three monitors above. Workspace
-     pins (1–8 → `DP-1`, 9 → `HDMI-A-1`, 10 → `HDMI-A-2`) probably via
-     `hl.workspace_rule` (used in `default/hypr/qconsole.lua`; check its
-     `monitor` field in `/usr/share/hypr/stubs/hl.meta.lua`).
-   - `autostart.conf` → `autostart.lua`: Firefox on ws 9 silent, Discord on
-     ws 10 silent, `openrgb --server`, `sleep 10 && personal_openrgb_set_colors`,
-     `xrandr --output DP-1 --primary` (XWayland primary, for Steam
-     notifications). See `laptop/hypr/.config/hypr/autostart.lua`.
-   - `windows.conf` → bottom of `hyprland.lua` via `o.window(...)`:
-     Discord ws 10 + no initial focus, Firefox ws 9 no initial focus,
-     floating rounding 4 (or 0, see square corners below), Steam sign-in
-     window (ws 1, centered), Steam main window size 1800x1000. The old
-     fastfetch/btop/satty sizing rule was dropped on the laptop (see
-     "Config port status"). `misc.vrr = 2` → Lua equivalent.
-   - `input.conf` → `input.lua`: `us,gr`, `compose:caps,grp:alts_toggle`,
-     repeat 40/600, numlock on, sensitivity 0, flat accel, per-terminal
-     touchpad scroll rules. See `laptop/hypr/.config/hypr/input.lua`.
-   - `hyprland.conf`'s NVIDIA `env` lines: Quattro's
-     `default/hypr/nvidia.lua` auto-detects and sets these; check `hyprctl
-     getenv`/`env` before adding anything.
-3. **Global workspaces** (required; the user does *not* want 4.5's
-   per-monitor 1–10/11–20 blocks): copy `laptop/hypr/.config/hypr/workspaces.lua`
-   (require it from `hyprland.lua` after `hypr.bindings`) and the
-   `recon.workspaces` plugin. See "4.5 update". This has only been tested
-   with one monitor; test the three-monitor case properly here: SUPER+1–0,
-   SUPER+SHIFT+ALT+arrows, plugging/unplugging, and that nothing gets
-   renumbered past 10.
-4. **Plugin clones and scripts** (copy from `laptop/` into `desktop/`):
-   - `recon.idle` + `laptop/bin` `recon-launch-screensaver` /
-     `recon-screensaver`. The desktop's screensaver behavior differs: waves on
-     `DP-1`, black on the side monitors. See the old
-     `desktop/bin/.local/bin/omarchy-launch-screensaver`,
-     `omarchy-screensaver-black`, and `omarchy-screensaver`. Fork
-     `recon-launch-screensaver` with that logic (the old names are shadowed
-     by PATH order, see "Known regressions").
-   - `recon.monitor`: the 1.67 scale preset is laptop-specific; the desktop
-     probably only needs the `recon-display-text-size` redirect (to protect
-     foot's font size), or nothing.
-   - Do NOT clone indicators or keyboard-layout (fixed upstream in 4.5).
-5. **Idle timings:** old `hypridle.conf` used screensaver 450s, lock 901s,
-   DPMS off 930s. Set `idle.screensaver`/`idle.lock` in
-   `~/.config/omarchy/shell.json`. Quickshell's idle service has no
-   DPMS-off step; check whether the lock plugin turns screens off, and
-   report back if screen-off is lost. Old `hyprlock.conf` (wallpaper only on
-   `DP-1`, input field on `DP-1`, no fingerprint) → check the Quickshell
-   lock plugin's options.
-6. **Pending feature ports** (see "Pre-Quattro features still to port"
-   below): square corners, Super+Backspace transparency,
-   pomodoro bindings (+ SUPER+U pseudo), mako-on-primary equivalent.
-   Shared ones (corners, transparency, pomodoro keys) arguably belong in
-   `base/`, but `base/hypr` currently only has `looknfeel.lua`. Ask the
-   user before restructuring.
-7. Stow `base/bin` here (pomodoro + transparency scripts).
-8. Cleanup once everything works: delete `desktop/hypr/*.conf`,
-   `desktop/waybar`, `desktop/environment-d/local-bin-path.conf` (dead
-   under UWSM, see "Known regressions"), `desktop/bin/omarchy-*screensaver*`
-   (once forked), the mako hooks in `desktop/omarchy/.../theme-set.d/`, and
-   `base/{walker,swayosd,waybar}`. Check for stow-symlink → regular-file
-   breakage (`ls -la`) and for bar resets disabling clones (`omarchy plugin
-   list`).
-9. Update this guide's Status and add any new gotchas.
+- **Hyprland Lua** (`desktop/hypr`): `monitors.lua` (monitors +
+  `hl.workspace_rule` pins 1–8 → DP-1, 9 → DP-2, 10 → HDMI-A-2),
+  `workspaces.lua` copied from the laptop, `autostart.lua` (Firefox on 9 via
+  `hl.exec_cmd(cmd, { workspace = "9 silent", no_initial_focus = true })`
+  launched directly, not through `o.launch()`'s `uwsm-app`, so the launch
+  rules can match the window; Discord; OpenRGB; `xrandr --output DP-1
+  --primary` so Steam's XWayland notifications land on DP-1), `input.lua`,
+  window rules + `misc.vrr = 2` at the bottom of `hyprland.lua`. NVIDIA env
+  vars needed nothing: `default/hypr/nvidia.lua` sets them.
+- **Bar:** the Quickshell bar draws on every monitor and can't be limited to
+  DP-1 like the old waybar without cloning the whole bar plugin. The
+  desktop's `recon.workspaces` copy labels 9/10 as U/L and marks the
+  workspace each bar's own monitor shows (the laptop's marks the focused
+  one).
+- **Clones:** `recon.workspaces` (above), `brendon.notifications` (DP-1),
+  `brendon.idle` (desktop screensaver). Not needed here: `recon.monitor`
+  (laptop scale preset), indicators / keyboard-layout (fixed in 4.5).
+- **Bindings:** `omarchy_preinstalled_bindings = false` plus the kept apps
+  re-added (`desktop/hypr/bindings.lua`); SUPER+L stays stock (cycle
+  layout; lock is SUPER+CTRL+L).
+- **Transparency:** `hypr-window-transparency-toggle` (`base/bin`) rewritten
+  for Lua `set_prop`; stock's toggle only reaches a terminal's 0.985.
+- **Corners:** `rounding = 0` in `base/hypr/looknfeel.lua`.
+- **Stowed here for the first time:** `base/bin`, `base/foot` (merged with
+  4.5's stock `foot.ini`, which adds Ctrl+Shift+C/V).
+- **Removed:** the old `.conf` files, waybar/walker/swayosd, the dead
+  `local-bin-path.conf`, the old screensaver scripts.
 
----
+## Resolved before/while migrating the desktop
 
-## Untracked desktop state to check before migrating
-
-- **Update 2026-10-25: probably found, already in the repo.** Commits
-  `e2e617c`/`333c4c0` (Aug 9, pushed from the desktop but never pulled on the
-  laptop until 2026-10-25) added
-  `{desktop,laptop}/omarchy/.config/omarchy/hooks/theme-set.d/pin-file-manager-icons`.
-  It's a theme-set hook, not a nautilus-python extension. On every theme
-  switch it builds a "SimpleLines" icon theme from Adwaita's symbolic
-  folder/mimetype SVGs, recolored to the theme's accent from `colors.toml`.
-  Confirm this is the script on the desktop before treating the blocker as
-  closed. Under Quattro, check that its `~/.config/omarchy/current/theme/colors.toml`
-  path still resolves (theme state paths moved) and that `theme-set.d` hooks
-  still fire. Original note below.
-- **Nautilus accent-color icon script.** A script exists (desktop only, likely
-  not yet committed to this repo) that watches the Omarchy theme's accent
-  color and applies it to a set of SimpleIcons-derived SVGs, integrated with
-  Nautilus — probably a `nautilus-python` extension following the same
-  pattern as `localsend.py`/`transcode.py` in
-  `~/.local/share/nautilus-python/extensions/` on the laptop, which are also
-  untracked. Confirmed not present anywhere in this repo (`base/` or
-  `desktop/`) or in laptop `.bash_history`/`nautilus-python` dirs as of
-  2026-08-13 — it only lives on desktop's disk. **Before migrating desktop,
-  locate it, move it into a stow package (`desktop/nautilus-python/...` or
-  similar per this repo's "Adding a new file to the dotfiles" convention in
-  `CLAUDE.md`), and commit it** — otherwise the migration's package
-  removals/theme-state-path changes could silently break or lose it, the same
-  way `laptop/waybar`'s `tailscale.sh` almost did.
-
-## Pre-Quattro features still to port (from the Aug 7–9 desktop commits)
-
-Ten desktop commits (Aug 7–9) were merged into `main` on 2026-10-25. Five
-touched pre-Quattro files that `main` had already deleted. Those deletions
-were kept, so the content only lives in history now. `git show <hash>` to
-recover it.
-
-- **Square window corners** (`19800b3`). The Hyprland part was
-  `rounding = 0` in `base/hypr/looknfeel.conf`; port it to `looknfeel.lua`.
-  The swayosd / walker "square" theme / `zero-mako-rounding` hook parts
-  target retired apps (now dead on Quattro, still live on 3.8 desktop).
-  Check whether Quickshell's bar/OSD/notifications need their own rounding
-  override.
-- **Super+Backspace transparency toggle** (`2e50d90`, corrected by
-  `abde711`). The `base/bin/.local/bin/hypr-window-transparency-toggle`
-  script came through. Still to port: the `unbind`/rebind of
-  `SUPER + BACKSPACE` (was `bindings.conf`), `blur.ignore_opacity = true`
-  (`abde711` reversed `2e50d90`'s `false`; `true` is right), and the
-  terminal-tag opacity override (`windowrule = opacity 1.0 1.0, match:tag
-  terminal`). First check whether stock 4.5's toggle works now. The
-  alacritty opacity part is moot (foot is the terminal).
-- **Pomodoro** (`4cd72d4`, `5e686d0`). The `base/bin` scripts
-  (`pomodoro-primary/stop/status/advance`) came through. Still to port: the
-  `SUPER + P` / `SUPER + SHIFT + P` bindings, and moving stock Pseudo window
-  from `SUPER + P` to `SUPER + U`. The waybar module would need a Quickshell
-  bar widget (or a plugin) to show status.
-- **Mako on primary display** (`a767f11`, `pin-mako-output` hook). Mako is
-  retired; check whether Quickshell notifications have an output setting.
-- `base/bin` is a new stow package; it isn't stowed on the laptop yet.
-- `base/swayosd`, `base/walker`, `base/waybar` modules, and the mako hooks
-  are pre-Quattro only. Delete them once the desktop is migrated.
+- **The "Nautilus accent-color icon script"** was the
+  `pin-file-manager-icons` theme-set hook (`e2e617c`/`333c4c0`), already
+  in the repo for both machines. Quattro broke it silently: it read
+  `~/.config/omarchy/current/theme/colors.toml`, which moved to
+  `~/.local/state/omarchy/current/theme/` (fixed in `cde7037`). Adwaita's
+  newer `folder-projects` icon also needed its GTK "grappa" attributes
+  stripped to take the accent (`3c231e1`).
+- **The Aug 7–9 desktop features** whose pre-Quattro files `main` had
+  deleted (square corners `19800b3`, transparency toggle `2e50d90`/`abde711`,
+  pomodoro `4cd72d4`/`5e686d0`, mako on DP-1 `a767f11`) are all ported, as
+  above. Only the pomodoro countdown display is left (to-do list).
 
 ## Before you start (any machine)
 
@@ -260,14 +163,18 @@ recover it.
   `.pkg.tar.zst` from `/var/cache/pacman/pkg/` *before* switching channels, so
   you can roll back if the pin gets silently dropped and something upgrades
   out from under you.
-- **Never point an already-Quattro-installed system at the `stable` channel.**
-  Stable still serves the pre-Quattro 3.8.x package line. Attempting it tries
-  to downgrade ~300+ core packages (glibc, systemd, gcc, hyprland, binutils,
-  ...) while the filesystem is already in Quattro's migrated state — a
-  dangerous mismatch. We hit this for real; only avoided actual damage
-  because unrelated file conflicts (gexiv2, mbedtls) blocked the transaction
-  before anything committed. If you need current Quattro package updates,
-  stay on `rc` (or `edge`) until Quattro is promoted to stable.
+- **Never move a Quattro system to a channel that's behind it.** In August,
+  stable still served 3.8.x, and pointing an already-migrated laptop at it
+  tried to downgrade ~300 core packages (glibc, systemd, gcc, hyprland, ...)
+  under a Quattro filesystem; unrelated file conflicts (gexiv2, mbedtls)
+  blocked it before anything committed. Stable has served Quattro since
+  (`4.0.6` on 2026-11-01), but the same rule applies: an RC machine on 4.5
+  must stay on RC until stable reaches 4.5. Check what a channel serves
+  first: `curl -s https://pkgs.omarchy.org/<channel>/x86_64/omarchy.db |
+  bsdtar -tf - | grep '^omarchy-[0-9][^/]*/$'`.
+- **Back up the Secure Boot signing keys** (`/var/lib/sbctl`) if the machine
+  uses its own (see "Secure Boot"). Losing them is the one thing that forces
+  setup mode and a re-enroll.
 - **Back up Wi-Fi credentials** from `/var/lib/iwd/` before upgrading — not
   migrated automatically. The network stack itself switches from `iwd` to
   NetworkManager; only the currently-connected network gets handed off across
@@ -276,7 +183,7 @@ recover it.
   hardware-specific (e.g. `linux-t2`) rather than letting it move as a side
   effect of a channel switch — see the pin-backup note above.
 
-## Upgrade sequence that actually worked
+## Upgrade sequence that actually worked (laptop, RC channel, August)
 
 1. `omarchy-channel-set rc` (or Update ▸ Channel in the menu). Expect the
    pacman.conf overwrite described above, plus a forced `pacman -Syyuu` that
@@ -301,6 +208,57 @@ recover it.
 5. Reboot again to complete the Lua config cutover. The pre-reboot session
    runs off legacy `.conf` compat shims so it doesn't crash mid-upgrade, but
    the real cutover to Quickshell/Lua only happens after this reboot.
+
+## Upgrade from 3.8.4 on the stable channel (desktop, 2026-11-01)
+
+Once Quattro was on stable, the RC detour wasn't needed, but 3.8.4's git
+`master` (frozen since 2026-07-29) has neither the Quattro menu entry nor the
+upgrade invite; both only exist on the `rc` git branch (3.8.5). Its
+`omarchy-upgrade-to-quattro` reads the channel from
+`/etc/pacman.d/mirrorlist` and keeps a stable machine on stable.
+
+1. `omarchy-branch-set rc`: switches only `~/.local/share/omarchy`'s git
+   branch. Unlike `omarchy-channel-set`, no `pacman.conf` rewrite and no
+   forced `pacman -Syyuu`.
+2. `omarchy-update`: pulls 3.8.5 (its migrations include the invite and a
+   Plymouth fix that adds `initramfs_async=0` and rebuilds the UKI). Reboot.
+3. Update ▸ Omarchy To Quattro. Installed `omarchy 4.0.6-1` plus the
+   `linux-omarchy` kernel alongside `linux`; `limine.conf`'s default entry
+   becomes `linux-omarchy`. Before the reboot, check signatures (see
+   "Secure Boot") and that the NVIDIA DKMS module exists for both kernels
+   (`find /usr/lib/modules/*/ -name 'nvidia.ko*'`). Reboot.
+4. Optional, to match the laptop: snapshot, then `omarchy-channel-set rc`
+   (pulled `4.5.0rc2-1`; same kernels, so nothing to re-sign).
+
+The 3.8 bar's "update available" indicator compares against the newest git
+tag, RCs included, so it shows `v4.5.0-rc2` on a 3.8.4 machine; it's not a
+3.8 update.
+
+## Secure Boot (desktop)
+
+The desktop boots Limine with Secure Boot on, using sbctl's own keys plus
+Microsoft's (for dual-booting Windows from its own ESP). Upgrading the OS
+never touches the enrolled keys (PK/KEK/db), so no setup mode or re-enroll is
+needed, and Windows (BitLocker / Hello PIN, which watch PCR7) is unaffected.
+What can break boot is an unsigned EFI binary.
+
+- Signing is automatic: `limine-entry-tool` (via `limine-mkinitcpio`) and
+  `limine-snapper-sync` sign `limine_x64.efi` and the UKIs with sbctl every
+  time they regenerate them; sbctl's own `zz-sbctl.hook` re-signs what's in
+  its database (`BOOTX64.EFI`, `BOOTIA32.EFI`). None of these packages are
+  on Quattro's removal lists.
+- Limine config enrollment is off here (`ENABLE_ENROLL_LIMINE_CONFIG` unset),
+  so the upgrade script's `sed` edits to `/boot/limine.conf` can't break boot.
+- Pre-reboot check, no root needed (`/boot` and the efivars are
+  world-readable): extract the `CN=Database Key` certificate from
+  `/sys/firmware/efi/efivars/db-d719b2cb-*` (an EFI_SIGNATURE_LIST) and run
+  `sbverify --cert db.pem` on every file in `/boot/EFI/{Linux,limine,BOOT}/`.
+  With root: `sudo sbctl verify`.
+- If it ever fails to boot: pick a snapshot or the other kernel in the Limine
+  menu. If the firmware rejects Limine itself, disable *only* Secure Boot in
+  the BIOS (don't clear keys or load defaults, which wipes the custom PK),
+  boot, `sudo limine-mkinitcpio && sudo sbctl verify`, re-enable. Don't boot
+  Windows in between.
 
 ## Known regressions to check for after migrating (any machine)
 
@@ -339,6 +297,47 @@ recover it.
   breaks the stow link without erroring. We hit this with `alacritty.toml`
   via the Quickshell display-scale/font-size panel. Check `ls -la` (look for
   `l` vs `-` in the permissions) on anything you suspect changed.
+
+- **Group memberships are removed on purpose.** Quattro migrations take the
+  user out of `input` (raw keyboard access allows keylogging; kept only if
+  `xpadneo-dkms` or `ydotool` is installed; migration `1787865477`) and
+  `docker` (root-equivalent; opt back in with Setup ▸ Security ▸ Sudoless
+  Docker; `1787580187`). Check udev rules that grant devices via
+  `GROUP="input"`; on the desktop, OpenRGB's packaged rules use
+  `TAG+="uaccess"` instead, so nothing broke (see `system-backups/README.md`).
+- **Theme state moved** from `~/.config/omarchy/current/` to
+  `~/.local/state/omarchy/current/`. Personal hooks reading the old path
+  fail silently if they guard with `[[ -f ... ]] || exit 0`
+  (`pin-file-manager-icons` did). `theme-set.d` hooks themselves still run.
+- **The upgrade edits tracked files through stow links.** It rewrote the old
+  theme path in `base/alacritty/alacritty.toml` and
+  `desktop/hypr/hyprland.conf` inside the repo. Check `git status` after
+  upgrading before pulling or rebasing.
+- **Folded stow directories catch Omarchy's own files.** `theme-set.d` was a
+  single directory link into `desktop/omarchy`, so Quattro's `10-owe-sync`
+  hook was written into the repo. Stow `desktop/omarchy` with
+  `--no-folding` (`cd desktop && stow -t ~ --no-folding -R omarchy`) so the
+  directories are real and only tracked files are links.
+- **Quattro seeds some configs as plain files** where a stow link used to be
+  expected (`~/.config/foot/foot.ini`, the `hypr/*.lua` files), so a later
+  `stow` of that package conflicts. A conflict in one package aborts the
+  whole stow run, including the other packages named on the command line;
+  stow packages one at a time when unsure.
+- **Shell plugin changes need a real restart.** Edits to a stowed clone go
+  into the repo file, which the shell's watcher doesn't always see; run
+  `omarchy restart shell`. After swapping a *service* plugin for a clone,
+  also check that `pgrep -x quickshell` changed: a restart that only reloads
+  leaves the stock service owning its IPC and D-Bus names, so the clone shows
+  as enabled but does nothing. `idle.*` timeouts in `shell.json` likewise
+  only apply after a restart.
+- **`pgrep -f` / `pkill -f` match your own command line.** The screensaver
+  launcher exits early if anything's command line contains
+  `org.omarchy.screensaver`, including the shell running your test, and a
+  `pkill -f` cleanup with that string kills the test shell itself. Build the
+  string from pieces in test commands.
+- **Quattro's shell aliases** replace `ls`, `grep` and `find` with other
+  tools in interactive bash, so their usual flags fail. Use `/usr/bin/ls`
+  etc. in one-liners.
 
 ## Lost features (no Quattro replacement yet)
 
