@@ -27,7 +27,7 @@ ADWAITA_SYMBOLIC=/usr/share/icons/Adwaita/symbolic
 DEST_BASE=~/.local/share/icons/SimpleLines/scalable
 [[ -d $ADWAITA_SYMBOLIC ]] || exit 0
 
-COLORS_FILE=~/.config/omarchy/current/theme/colors.toml
+COLORS_FILE=~/.local/state/omarchy/current/theme/colors.toml
 [[ -f $COLORS_FILE ]] || exit 0
 
 ACCENT=$(grep -oP '^accent\s*=\s*"\K#[0-9A-Fa-f]{6}' "$COLORS_FILE" | head -1)
