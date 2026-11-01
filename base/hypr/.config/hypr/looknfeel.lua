@@ -1,5 +1,18 @@
 -- Change the default Omarchy look'n'feel.
 
+-- Square window corners whatever the theme: some themes (Solitude, and the
+-- custom Event Horizon, Hinterlands, Lasthorizon) set their own rounding.
+-- The theme's hyprland.lua loads inside default.hypr.omarchy, before this
+-- file, so this wins. The Omarchy shell takes its corner radius from this
+-- same setting, so bar panels, notifications and the OSD go square too.
+-- Floating windows get a slight rounding back via a window rule in each
+-- machine's hyprland.lua.
+hl.config({
+  decoration = {
+    rounding = 0,
+  },
+})
+
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#general
 -- hl.config({
 --   general = {
