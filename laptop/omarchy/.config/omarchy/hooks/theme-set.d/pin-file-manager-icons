@@ -66,7 +66,15 @@ for context in places mimetypes; do
     name=$(basename "$src" | sed 's/-symbolic\.svg$/.svg/')
     # Adwaita's own source has a minor inconsistency: most icons use
     # #2e3436 but a few use #2e3434 - replace both.
-    sed -E "s/#2e343[46]/$ACCENT/g" "$src" >"$dest_dir/$name"
+    #
+    # Newer icons use GTK's "grappa" format (folder-projects): stroke="#000"
+    # plus gpa:stroke="foreground", which makes GTK draw them in the text
+    # color whatever the stroke says. Recolor the black and drop the gpa:
+    # attributes so they render as plain SVGs in the accent like the rest.
+    sed -E -e "s/#2e343[46]/$ACCENT/g" \
+      -e "s/(stroke|fill)=\"#000(000)?\"/\1=\"$ACCENT\"/g" \
+      -e 's/ gpa:[a-z-]+="[^"]*"//g' -e 's/ xmlns:gpa="[^"]*"//' \
+      "$src" >"$dest_dir/$name"
   done
 done
 
