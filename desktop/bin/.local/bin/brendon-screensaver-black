@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# omarchy:summary=Show a black screen on the side monitors during the screensaver.
+
+# Companion to brendon-screensaver, launched by brendon-launch-screensaver on
+# every monitor except DP-1. Runs in a window with the same
+# org.omarchy.screensaver class, so the stock exit logic covers it: focus
+# moving between screensaver windows keeps them all up, and leaving them (or
+# a key press here) closes every one.
+
+screensaver_in_focus() {
+  hyprctl activewindow -j | jq -e '.class == "org.omarchy.screensaver"' >/dev/null 2>&1
+}
+
+exit_screensaver() {
+  hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null || true
+  pkill -x ttfx 2>/dev/null
+  pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null
+  exit 0
+}
+
+trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
+
+printf '\033]11;rgb:00/00/00\007'  # Set background color to black
+printf '\033[?25l'                 # Hide the text cursor
+stty -echo 2>/dev/null
+clear
+
+while true; do
+  if read -n1 -t 1 || ! screensaver_in_focus; then
+    exit_screensaver
+  fi
+done
